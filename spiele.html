@@ -1,0 +1,1156 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kurzweil">
+<title>Kurzweil</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&display=swap">
+<style>
+/* Kurzweil: kleine Spiele gegen die Langeweile – im selben Look wie Mondgarten:
+   Tusche und Pinsel auf altem Papier, in hellem und dunklem Umfeld gleich. */
+:root {
+  --paper: #ebe4d4;
+  --paper-deep: #ddd3bd;
+  --ink: #121014;
+  --ink-soft: rgba(18, 16, 20, .56);
+  --glow: #f6e8bd;
+  --display: "IM Fell English SC", "Iowan Old Style", Georgia, serif;
+  --text: "IM Fell English", "Iowan Old Style", Georgia, serif;
+  --grain: none;
+  color-scheme: light;
+}
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--grain), radial-gradient(ellipse at 50% 40%, var(--paper) 40%, var(--paper-deep) 100%);
+  background-color: var(--paper);
+  color: var(--ink);
+  font-family: var(--text);
+  font-size: 17px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-tap-highlight-color: transparent;
+  user-select: none; -webkit-user-select: none;
+  overflow: hidden;
+}
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+button:focus-visible { outline: 2px dashed var(--ink); outline-offset: 3px; }
+
+#app {
+  height: 100%; max-width: 560px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 8px;
+  padding-top: max(8px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
+  box-sizing: border-box;
+}
+
+svg .s { fill: none; stroke: var(--ink); stroke-width: var(--sw, .62); stroke-linecap: round; stroke-linejoin: round; }
+svg .t { fill: none; stroke: var(--ink); stroke-width: calc(var(--sw, .62) * .58); stroke-linecap: round; stroke-linejoin: round; }
+svg .sp { fill: none; stroke: var(--paper); stroke-width: var(--sw, .62); stroke-linecap: round; stroke-linejoin: round; }
+svg .p { fill: var(--paper); }
+svg .k { fill: var(--ink); }
+svg .w { fill: var(--ink); fill-opacity: .2; }
+svg .hit { fill: #000; fill-opacity: 0; cursor: pointer; }
+
+/* ---- Kopfzeile ---- */
+.bar { display: flex; align-items: center; gap: 4px; min-height: 40px; }
+.bar .room {
+  flex: 1; text-align: center; min-width: 0;
+  font-family: var(--display); font-size: 17px; letter-spacing: .2em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.icon-btn { width: 40px; height: 40px; display: grid; place-items: center; flex: 0 0 auto; }
+.icon-btn svg { width: 24px; height: 24px; --sw: 1.7; }
+.lang-btn {
+  height: 32px; padding: 0 9px; display: flex; align-items: center; gap: 5px; flex: 0 0 auto;
+  font-family: var(--display); font-size: 14px; letter-spacing: .08em; position: relative;
+}
+.lang-btn svg { width: 17px; height: 17px; --sw: 1.7; }
+.count { min-width: 64px; text-align: right; font-family: var(--display); font-size: 20px; padding-right: 6px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.count small { font-size: 13px; color: var(--ink-soft); letter-spacing: .04em; }
+
+/* Pinselrahmen für HTML-Elemente */
+.frame::before, .btn::before, .lang-btn::before, .gcard::before, .ov-card::before, .padb::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  border: 1.6px solid var(--ink); border-radius: 3px 7px 2px 6px / 6px 3px 7px 2px; filter: url(#brushHTML);
+}
+.btn { position: relative; padding: 11px 18px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; font-size: 17px; }
+.btn > * { position: relative; }
+.btn svg { width: 17px; height: 17px; --sw: 1.7; }
+.btn.fill { color: var(--paper); }
+.btn.fill::before { background: var(--ink); filter: url(#brushSoft); }
+.btn.fill svg .s { stroke: var(--paper); }
+.btn:active, .padb:active { transform: translateY(1px) scale(.98); }
+
+/* ---- Übersicht ---- */
+.hub { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; align-items: center; gap: 14px; padding-bottom: 8px; scrollbar-width: none; }
+.hub::-webkit-scrollbar { display: none; }
+.hub svg.hero { width: min(70vw, 250px); height: auto; flex: 0 0 auto; --sw: .62; animation: sceneIn 1.6s ease both; }
+.hub h1 { margin: -6px 0 0; font-family: var(--display); font-weight: 400; font-size: clamp(30px, 9vw, 42px); letter-spacing: .16em; text-align: center; }
+.hub .sub { margin: -10px 0 4px; font-style: italic; color: var(--ink-soft); text-align: center; text-wrap: balance; }
+.games { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+.gcard {
+  position: relative; display: flex; align-items: center; gap: 14px; padding: 10px 14px 10px 10px; text-align: left;
+  animation: pop .55s cubic-bezier(.2, 1.3, .4, 1) both; text-decoration: none; color: inherit;
+}
+.gcard .ic { width: 58px; height: 58px; flex: 0 0 auto; }
+.gcard .ic svg { width: 100%; height: 100%; --sw: 1; }
+.gcard .tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.gcard .nm { font-family: var(--display); font-size: 20px; letter-spacing: .08em; }
+.gcard .ds { font-style: italic; font-size: 14.5px; color: var(--ink-soft); line-height: 1.25; }
+.gcard .bs { flex: 0 0 auto; text-align: right; font-family: var(--display); font-size: 19px; font-variant-numeric: tabular-nums; }
+.gcard .bs small { display: block; font-size: 11.5px; color: var(--ink-soft); letter-spacing: .08em; }
+.gcard:active { transform: scale(.985); }
+.gcard.ext { opacity: .92; }
+@keyframes pop { from { transform: scale(.85) translateY(10px); opacity: 0; } }
+@keyframes sceneIn { from { opacity: 0; filter: blur(3px); } to { opacity: 1; filter: none; } }
+@keyframes breathe { 50% { opacity: .35; } }
+
+/* ---- Spielfläche ---- */
+.stage-wrap { display: flex; justify-content: center; }
+.stage {
+  position: relative; width: min(100%, 58vh); aspect-ratio: 1;
+  background:
+    radial-gradient(ellipse at 50% 46%, transparent 52%, rgba(50, 36, 20, .22) 100%),
+    radial-gradient(circle at 14% 86%, rgba(120, 90, 50, .10), transparent 20%),
+    var(--grain), var(--paper);
+  box-shadow: 0 1px 0 rgba(0,0,0,.05), 0 10px 30px -18px rgba(30, 20, 10, .55);
+  overflow: hidden; touch-action: none;
+  animation: sceneIn 1s ease both;
+}
+.stage.night { background: var(--ink); }
+.stage.small { width: min(100%, 47vh); }
+.stage::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 6;
+  border: 3px solid var(--ink); border-radius: 3px 8px 4px 9px / 9px 3px 8px 4px;
+  filter: url(#brushHTML); opacity: .9;
+}
+.stage > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+.msg {
+  min-height: 2.7em; display: grid; place-items: center; text-align: center;
+  font-size: 18px; font-style: italic; line-height: 1.3; padding-inline: 4px; text-wrap: balance;
+}
+.msg span { animation: inkIn 1s ease both; }
+@keyframes inkIn { from { opacity: 0; filter: blur(4px); } to { opacity: 1; filter: none; } }
+.ctrl { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; align-items: center; }
+.spacer { flex: 1; min-height: 0; }
+
+/* Overlay in der Spielfläche */
+.ov { position: absolute; inset: 0; z-index: 5; display: grid; place-items: center; background: rgba(235, 228, 212, .55); animation: veilIn .5s ease both; padding: 8%; }
+.night .ov { background: rgba(18, 16, 20, .45); }
+@keyframes veilIn { from { opacity: 0; } }
+.ov-card {
+  position: relative; background: var(--grain), var(--paper); padding: 18px 22px 20px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; max-width: 100%;
+  animation: pop .5s cubic-bezier(.2, 1.3, .4, 1) both; box-shadow: 0 12px 30px -16px rgba(0,0,0,.6);
+}
+.ov-card::before { border-width: 2px; inset: 4px; }
+.ov-card > * { position: relative; }
+.ov-card h3 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 21px; letter-spacing: .08em; text-wrap: balance; }
+.ov-card p { margin: 0; font-style: italic; line-height: 1.35; text-wrap: balance; }
+.ov-card .big { font-family: var(--display); font-size: 44px; line-height: 1; font-style: normal; }
+.ov-card .small { font-size: 14px; color: var(--ink-soft); }
+.ov-card svg.rate { width: 150px; height: 46px; --sw: .9; }
+
+/* ---- Mondphasen ---- */
+.tl {
+  position: absolute; width: 22%; height: 22%; z-index: 2;
+  transition: left .11s ease-in-out, top .11s ease-in-out;
+}
+.tl::before {
+  content: ""; position: absolute; inset: 0;
+  border: 1.6px solid var(--ink); border-radius: 3px 7px 2px 6px / 6px 3px 7px 2px; filter: url(#brushHTML);
+  background: var(--paper);
+}
+.tl.dark::before { background: var(--ink); filter: url(#brushSoft); }
+.tl svg { position: absolute; inset: 0; width: 100%; height: 100%; --sw: .9; }
+.tl b {
+  position: absolute; right: 7%; bottom: 3%; font-weight: 400; font-family: var(--display);
+  font-size: clamp(9px, 2.6vw, 13px); letter-spacing: .04em; opacity: .62;
+}
+.tl.dark b { color: var(--paper); opacity: .75; }
+.tl.new { animation: tileIn .26s ease both; }
+.tl.merge { animation: merge .3s ease both; z-index: 3; }
+@keyframes tileIn { from { transform: scale(.2); opacity: 0; } }
+@keyframes merge { 45% { transform: scale(1.16); } }
+
+/* ---- Tuschepaare ---- */
+.mem { position: absolute; inset: 3.5%; display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); gap: 2.6%; }
+.mc { position: relative; perspective: 700px; }
+.mc .in { position: absolute; inset: 0; transition: transform .5s cubic-bezier(.3, 1.35, .5, 1); transform-style: preserve-3d; }
+.mc.up .in { transform: rotateY(180deg); }
+.mc .f { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; display: grid; place-items: center; }
+.mc .front { transform: rotateY(180deg); }
+.mc .f::before {
+  content: ""; position: absolute; inset: 0; border: 1.6px solid var(--ink);
+  border-radius: 3px 7px 2px 6px / 6px 3px 7px 2px; filter: url(#brushHTML); background: var(--paper);
+}
+.mc .back::before { background: var(--ink); filter: url(#brushSoft); }
+.mc .f svg { position: relative; width: 86%; height: 86%; --sw: 1.05; }
+.mc.done .front { animation: matched .7s ease both; }
+.mc.done .front svg { opacity: .8; }
+@keyframes matched { 40% { transform: rotateY(180deg) scale(1.1); } }
+
+/* ---- Glühwurm & Laternen ---- */
+.ffly { animation: flick 1.4s ease-in-out infinite; }
+@keyframes flick { 50% { opacity: .55; } }
+.dead-worm { animation: breathe .25s steps(2) 4; }
+.lan.swing { animation: swing .9s cubic-bezier(.3, 1.6, .5, 1) both; }
+@keyframes swing { 20% { transform: rotate(9deg); } 50% { transform: rotate(-5deg); } 75% { transform: rotate(2deg); } }
+.hintc { animation: breathe 1.1s ease-in-out infinite; }
+.pad { display: grid; grid-template-columns: repeat(3, 54px); grid-template-rows: repeat(2, 44px); gap: 6px; }
+.padb { position: relative; display: grid; place-items: center; }
+.padb svg { width: 22px; height: 22px; --sw: 1.8; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <filter id="brush" x="-8%" y="-8%" width="116%" height="116%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.32" numOctaves="2" seed="4" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="0.95" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feTurbulence type="fractalNoise" baseFrequency="2.4" numOctaves="1" seed="11" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  2.2 0 0 0 -0.55" result="gm"/>
+      <feComposite in="d" in2="gm" operator="in" result="dry"/>
+      <feGaussianBlur in="d" stdDeviation="0.14" result="bleed"/>
+      <feColorMatrix in="bleed" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 .75 0" result="bleed2"/>
+      <feMerge><feMergeNode in="bleed2"/><feMergeNode in="dry"/></feMerge>
+    </filter>
+    <filter id="wash" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.09" numOctaves="3" seed="7" result="n"/>
+      <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 2.4 -0.7" result="m"/>
+      <feComposite in="SourceGraphic" in2="m" operator="in" result="c"/>
+      <feGaussianBlur in="c" stdDeviation="0.35"/>
+    </filter>
+    <filter id="brushSoft" x="-4%" y="-4%" width="108%" height="108%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="2" seed="2" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3.2" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="brushG" x="-10%" y="-10%" width="120%" height="120%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.45" numOctaves="2" seed="6" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="0.35" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feTurbulence type="fractalNoise" baseFrequency="3" numOctaves="1" seed="9" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  2.6 0 0 0 -0.45" result="gm"/>
+      <feComposite in="d" in2="gm" operator="in" result="dry"/>
+      <feGaussianBlur in="d" stdDeviation="0.08" result="bl"/>
+      <feColorMatrix in="bl" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 .8 0" result="bl2"/>
+      <feMerge><feMergeNode in="bl2"/><feMergeNode in="dry"/></feMerge>
+    </filter>
+    <filter id="fog" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="2.2"/></filter>
+    <filter id="softglow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="1.1"/></filter>
+    <filter id="brushHTML" x="-4%" y="-4%" width="108%" height="108%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.06" numOctaves="2" seed="2" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3.2" xChannelSelector="R" yChannelSelector="G" result="d"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="5" result="g"/>
+      <feColorMatrix in="g" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  2.4 0 0 0 -0.5" result="gm"/>
+      <feComposite in="d" in2="gm" operator="in"/>
+    </filter>
+  </defs>
+</svg>
+
+<div id="app"></div>
+
+<script>
+(() => {
+  // ================= Speicher, Sprache =================
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} },
+    del(k) { try { localStorage.removeItem(k); } catch (e) {} }
+  };
+  const LANGS = ["de", "en", "tr"];
+  const IDX = { de: 0, en: 1, tr: 2 };
+  let lang = store.get("kw.lang") || store.get("mg2.lang");
+  if (!IDX.hasOwnProperty(lang)) {
+    const nav = (navigator.language || "en").slice(0, 2).toLowerCase();
+    lang = IDX.hasOwnProperty(nav) ? nav : "en";
+  }
+  const t = (a) => a[IDX[lang]];
+  document.documentElement.lang = lang;
+
+  const TX = {
+    title: ["KURZWEIL", "PASTIMES", "OYALANCA"],
+    sub: ["fünf kleine Spiele gegen die Langeweile", "five little games against boredom", "can sıkıntısına karşı beş küçük oyun"],
+    best: ["Rekord", "Best", "Rekor"],
+    newGame: ["Neues Spiel", "New game", "Yeni oyun"],
+    again: ["Nochmal", "Again", "Tekrar"],
+    play: ["Los geht's", "Let's go", "Başla"],
+    keepOn: ["Weiterspielen", "Keep playing", "Devam et"],
+    moves: ["Züge", "Moves", "Hamle"],
+    level: ["Stufe", "Level", "Seviye"],
+    hint: ["Tipp", "Hint", "İpucu"],
+    restart: ["Von vorn", "Restart", "Baştan"],
+    nextLevel: ["Nächste Stufe", "Next level", "Sonraki seviye"],
+    newRecord: ["Neuer Rekord!", "New record!", "Yeni rekor!"],
+    points: ["Punkte", "Points", "Puan"],
+    moreGame: ["Das große Rätselspiel", "The big puzzle game", "Büyük bulmaca oyunu"],
+    // Mondphasen
+    moonStart: ["Wische, um alle Monde zu schieben. Gleiche Monde wachsen zusammen.", "Swipe to slide every moon. Matching moons grow together.", "Bütün ayları kaydırmak için kaydır. Aynı aylar birleşip büyür."],
+    moonFull: ["Vollmond! Weiter so.", "Full moon! Keep going.", "Dolunay! Devam."],
+    moonWin: ["Die Mondblüte ist aufgegangen!", "The moon blossom has opened!", "Ay çiçeği açtı!"],
+    moonWinSub: ["Du hast die höchste Phase erreicht. Spiel ruhig weiter.", "You reached the highest phase. Feel free to keep playing.", "En yüksek evreye ulaştın. İstersen devam et."],
+    moonOver: ["Der Himmel ist voll", "The sky is full", "Gökyüzü doldu"],
+    // Paare
+    memStart: ["Decke zwei Karten auf. Finde alle acht Paare.", "Turn over two cards. Find all eight pairs.", "İki kart aç. Sekiz çiftin hepsini bul."],
+    memGood: [["Ein Paar!", "Schön!", "Gefunden!"], ["A pair!", "Lovely!", "Found it!"], ["Bir çift!", "Güzel!", "Buldun!"]],
+    memWin: ["Alle Paare gefunden", "All pairs found", "Bütün çiftler bulundu"],
+    // Glühwurm
+    wormStart: ["Wische oder nutze die Pfeile. Sammle die Glühwürmchen.", "Swipe or use the arrows. Gather the fireflies.", "Kaydır ya da okları kullan. Ateş böceklerini topla."],
+    wormOver: ["Die Nacht wird still", "The night falls quiet", "Gece sessizleşiyor"],
+    wormGold: ["Ein goldenes Glühwürmchen! +3", "A golden firefly! +3", "Altın bir ateş böceği! +3"],
+    // Laternen
+    lanStart: ["Tippe eine Laterne: sie und ihre Nachbarn wechseln. Zünde alle an.", "Tap a lantern: it and its neighbours flip. Light them all.", "Bir fenere dokun: o ve komşuları değişir. Hepsini yak."],
+    lanWin: ["Alle Laternen brennen", "Every lantern is lit", "Bütün fenerler yanıyor"],
+    lanHint: ["Diese hier vielleicht …", "Maybe this one …", "Belki şu …"],
+    // Nachtfalter
+    mothStart: ["Tippe, um zu flattern. Flieg zwischen den Bambusrohren hindurch.", "Tap to flutter. Fly between the bamboo stalks.", "Kanat çırpmak için dokun. Bambuların arasından uç."],
+    mothOver: ["Der Falter ruht sich aus", "The moth takes a rest", "Kelebek dinleniyor"]
+  };
+
+  // ================= Werkzeug =================
+  const n = (v) => Math.round(v * 100) / 100;
+  const rng = (seed) => () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let x = Math.imul(seed ^ seed >>> 15, 1 | seed); x = x + Math.imul(x ^ x >>> 7, 61 | x) ^ x; return ((x ^ x >>> 14) >>> 0) / 4294967296; };
+  const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const buzz = (ms) => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
+  const pick = (a) => a[Math.random() * a.length | 0];
+
+  function stroke(pts, w0, w1, cls) {
+    if (pts.length < 2) return "";
+    const L = [], R = [];
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i], a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
+      let dx = b[0] - a[0], dy = b[1] - a[1]; const len = Math.hypot(dx, dy) || 1; dx /= len; dy /= len;
+      const u = i / (pts.length - 1), w = (w0 + (w1 - w0) * u) * Math.sin(Math.PI * Math.min(1, .15 + u * .85)) + .05;
+      L.push([p[0] - dy * w, p[1] + dx * w]); R.push([p[0] + dy * w, p[1] - dx * w]);
+    }
+    const all = L.concat(R.reverse());
+    return `<path class="${cls || "k"}" d="M${all.map((q) => n(q[0]) + " " + n(q[1])).join("L")}Z"/>`;
+  }
+
+  // Mondphase: Tuschescheibe, beleuchteter Teil in Papierfarbe (zunehmend, rechts hell)
+  function phase(cx, cy, r, f) {
+    let s = `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}" class="k"/>`;
+    if (f >= .999) s += `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}" class="p"/>`;
+    else if (f > 0) {
+      const rx = n(r * Math.abs(1 - 2 * f));
+      s += `<path class="p" d="M${n(cx)} ${n(cy - r)}A${n(r)} ${n(r)} 0 0 1 ${n(cx)} ${n(cy + r)}A${rx} ${n(r)} 0 0 ${f < .5 ? 0 : 1} ${n(cx)} ${n(cy - r)}Z"/>`;
+    }
+    return s + `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}" class="s"/>`;
+  }
+
+  function splatters(seed, count, area, cls) {
+    const r = rng(seed); let s = "";
+    for (let i = 0; i < count; i++) {
+      const x = area[0] + r() * area[2], y = area[1] + r() * area[3], rad = .15 + r() * .5;
+      s += `<circle cx="${n(x)}" cy="${n(y)}" r="${n(rad)}" class="${cls || "k"}" opacity="${n(.5 + r() * .5)}"/>`;
+      if (r() < .5) s += `<circle cx="${n(x + rad * 1.8)}" cy="${n(y - rad)}" r="${n(rad * .35)}" class="${cls || "k"}"/>`;
+    }
+    return s;
+  }
+
+  function blossom(x, y, r, filled) {
+    let s = "";
+    for (let i = 0; i < 5; i++) {
+      const a = i / 5 * 2 * Math.PI - Math.PI / 2, px = x + Math.cos(a) * r * .55, py = y + Math.sin(a) * r * .55;
+      s += `<ellipse cx="${n(px)}" cy="${n(py)}" rx="${n(r * .36)}" ry="${n(r * .52)}" transform="rotate(${n(a * 180 / Math.PI + 90)} ${n(px)} ${n(py)})" class="${filled ? "k" : "p"}"/>`;
+      s += `<ellipse cx="${n(px)}" cy="${n(py)}" rx="${n(r * .36)}" ry="${n(r * .52)}" transform="rotate(${n(a * 180 / Math.PI + 90)} ${n(px)} ${n(py)})" class="s"/>`;
+    }
+    return s + `<circle cx="${n(x)}" cy="${n(y)}" r="${n(r * .2)}" class="${filled ? "p" : "k"}"/>`;
+  }
+  const rating = (k) => `<svg class="rate" viewBox="0 0 60 18">${[0, 1, 2].map((i) => blossom(12 + i * 18, 9, 7, i < k)).join("")}</svg>`;
+
+  // ================= Papierstruktur =================
+  (function makeGrain() {
+    try {
+      const c = document.createElement("canvas"); c.width = c.height = 240;
+      const g = c.getContext("2d"), img = g.createImageData(240, 240);
+      for (let i = 0; i < img.data.length; i += 4) {
+        const v = 90 + Math.random() * 60;
+        img.data[i] = v; img.data[i + 1] = v * .9; img.data[i + 2] = v * .75; img.data[i + 3] = Math.random() * 26;
+      }
+      g.putImageData(img, 0, 0);
+      g.strokeStyle = "rgba(70, 55, 35, .09)"; g.lineWidth = .6;
+      for (let i = 0; i < 70; i++) {
+        const x = Math.random() * 240, y = Math.random() * 240, a = Math.random() * Math.PI, l = 4 + Math.random() * 12;
+        g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + Math.cos(a) * l / 2 + 2, y + Math.sin(a) * l / 2, x + Math.cos(a) * l, y + Math.sin(a) * l); g.stroke();
+      }
+      document.documentElement.style.setProperty("--grain", `url(${c.toDataURL()})`);
+    } catch (e) {}
+  })();
+
+  // ================= Klang (live erzeugt) =================
+  const Snd = (() => {
+    let ctx = null, out, rev, on = store.get("kw.sound") !== "off";
+    const mtof = (m) => 440 * Math.pow(2, (m - 69) / 12);
+    function impulse(sec, decay) {
+      const len = Math.floor(ctx.sampleRate * sec), b = ctx.createBuffer(2, len, ctx.sampleRate);
+      for (let ch = 0; ch < 2; ch++) { const d = b.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay); }
+      return b;
+    }
+    function start() {
+      if (!on) return;
+      if (ctx) { if (ctx.state === "suspended") ctx.resume(); return; }
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext; ctx = new AC();
+        out = ctx.createGain(); out.gain.value = .85; out.connect(ctx.destination);
+        rev = ctx.createConvolver(); rev.buffer = impulse(2.6, 2.6);
+        const rg = ctx.createGain(); rg.gain.value = .45; rev.connect(rg); rg.connect(out);
+      } catch (e) { ctx = null; }
+    }
+    const ok = () => on && ctx;
+    function route(g, wet) { g.connect(out); const w = ctx.createGain(); w.gain.value = wet; g.connect(w); w.connect(rev); }
+    function bell(m, d, vel) {
+      if (!ok()) return;
+      const now = ctx.currentTime + (d || 0), f = mtof(m), g = ctx.createGain();
+      g.gain.setValueAtTime(0, now); g.gain.linearRampToValueAtTime(vel || .07, now + .006); g.gain.exponentialRampToValueAtTime(.0006, now + 1.9);
+      route(g, .9);
+      [[1, 1], [2.003, .32], [3.01, .08], [5.4, .025]].forEach(([mul, amp]) => {
+        const o = ctx.createOscillator(), og = ctx.createGain();
+        o.frequency.value = f * mul; og.gain.value = amp; o.connect(og); og.connect(g); o.start(now); o.stop(now + 2);
+      });
+    }
+    function noise(dur, vol, type, freq, d) {
+      if (!ok()) return;
+      const len = Math.floor(ctx.sampleRate * dur), b = ctx.createBuffer(1, len, ctx.sampleRate), dd = b.getChannelData(0);
+      for (let i = 0; i < len; i++) dd[i] = Math.random() * 2 - 1;
+      const s = ctx.createBufferSource(); s.buffer = b;
+      const f = ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = 1.2;
+      const g = ctx.createGain(), now = ctx.currentTime + (d || 0);
+      g.gain.setValueAtTime(vol, now); g.gain.exponentialRampToValueAtTime(.0005, now + dur);
+      s.connect(f); f.connect(g); route(g, .25); s.start(now);
+    }
+    function low(f0, f1, dur, vol) {
+      if (!ok()) return;
+      const o = ctx.createOscillator(), g = ctx.createGain(), now = ctx.currentTime;
+      o.type = "sine"; o.frequency.setValueAtTime(f0, now); o.frequency.exponentialRampToValueAtTime(f1, now + dur);
+      g.gain.setValueAtTime(vol, now); g.gain.exponentialRampToValueAtTime(.001, now + dur + .05);
+      o.connect(g); route(g, .5); o.start(now); o.stop(now + dur + .1);
+    }
+    const PENTA = [69, 72, 74, 76, 79, 81, 84, 86, 88, 91, 93, 96, 98];
+    return {
+      start, isOn: () => on,
+      toggle() { on = !on; store.set("kw.sound", on ? "on" : "off"); if (on) start(); return on; },
+      tap() { noise(.035, .05, "highpass", 1400); },
+      slide() { noise(.07, .025, "bandpass", 900); },
+      flap() { noise(.09, .05, "bandpass", 520); },
+      bell, step: (i, vel) => bell(PENTA[Math.max(0, Math.min(PENTA.length - 1, i))], 0, vel || .06),
+      chord(ms, step, vel) { ms.forEach((m, i) => bell(m, i * (step || .1), vel || .06)); },
+      win() { [69, 72, 76, 81, 84, 88, 93].forEach((m, i) => bell(m, i * .11, .06)); },
+      fail() { low(240, 70, .55, .16); },
+      thud() { low(120, 45, .25, .2); }
+    };
+  })();
+  document.addEventListener("pointerdown", () => Snd.start(), { capture: true });
+
+  // ================= Symbole =================
+  const UI = {
+    back: `<svg viewBox="0 0 24 24"><path class="s" d="M15 5L8 12L15 19"/></svg>`,
+    globe: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" class="s"/><path class="s" d="M3 12H21M12 3C8.5 7 8.5 17 12 21M12 3C15.5 7 15.5 17 12 21"/></svg>`,
+    soundOn: `<svg viewBox="0 0 24 24"><path class="k" d="M3 9H7L12 4.5V19.5L7 15H3Z"/><path class="s" d="M15.5 9Q17.5 12 15.5 15M18 6.5Q22 12 18 17.5"/></svg>`,
+    soundOff: `<svg viewBox="0 0 24 24"><path class="k" d="M3 9H7L12 4.5V19.5L7 15H3Z"/><path class="s" d="M16 9.5L21 14.5M21 9.5L16 14.5"/></svg>`,
+    turn: `<svg viewBox="0 0 24 24"><path class="s" d="M19 12A7 7 0 1 1 15.5 5.9M16 2V6.5H20.5"/></svg>`,
+    bulb: `<svg viewBox="0 0 24 24"><path class="s" d="M9 18H15M10 21H14M12 3A6 6 0 0 0 8.5 13.8C9.4 14.6 9.5 15.5 9.5 16H14.5C14.5 15.5 14.6 14.6 15.5 13.8A6 6 0 0 0 12 3Z"/></svg>`,
+    arrow: (r) => `<svg viewBox="0 0 24 24"><g transform="rotate(${r} 12 12)"><path class="s" d="M12 19V5M6 11L12 5L18 11"/></g></svg>`
+  };
+
+  // Tusche-Motive für die Paare (Ansicht 0..40)
+  const crowPath = `<path class="k" d="M-2.2 .6Q-1 -1.4 1.1 -1.1Q2.1 -2.3 2.9 -1.4L4 -1.2L2.9 -.9Q2.6 .9 .4 1.4L-.6 2.5L-.9 1.5L-3.4 2.1Z"/><circle cx="2.4" cy="-1.5" r=".18" fill="var(--paper)"/><path class="t" d="M.2 1.4V2.6M.9 1.3V2.5"/>`;
+  const MOTIFS = {
+    moon: () => `${phase(21, 20, 10, .3)}<path class="t" d="M8 9L8 13M6 11H10M31 30V33M29.5 31.5H32.5M33 9V11M32 10H34"/>`,
+    crow: () => `<path class="t" d="M4 31Q20 28 36 31"/><g transform="translate(19 22) scale(4.2)">${crowPath}</g>`,
+    fish: () => `<path class="k" d="M6 20Q13 11 24 16Q28 18 30 20Q28 22 24 24Q13 29 6 20Z"/><path class="k" d="M29 20L36 13.5Q33.8 20 36 26.5Z"/><path class="k" d="M16 15Q18 10 22 11.5Q20 13.5 20 15.5Z"/><circle cx="10.6" cy="18.8" r="1.1" class="p"/><path class="sp" d="M14 16.5Q15.6 20 14 23.5" style="stroke-width:.6"/><path class="t" d="M8 31Q11 29.6 14 31Q17 32.4 20 31M22 34Q25 32.6 28 34"/>`,
+    leaf: () => `<path class="s" d="M20 35Q20.6 30 20 25"/><path class="k" d="M20 25Q8.5 23 6.5 12.5Q13 6.5 19 9.6L20 13.5L21 9.6Q27 6.5 33.5 12.5Q31.5 23 20 25Z"/><path class="sp" d="M20 24.5L11 13M20 24.5L15.5 10.8M20 24.5L24.5 10.8M20 24.5L29 13" style="stroke-width:.4" opacity=".55"/>`,
+    mountain: () => `<circle cx="30" cy="10" r="4" class="s"/><path class="k" d="M3 32L14.5 13.5L20 20.5L25.5 12L37 32Z"/><path class="p" d="M14.5 13.5L11.6 18.2L13.6 17.3L15.2 18.6L17 16.7Z"/><path class="p" d="M25.5 12L22.4 16.8L24.4 16L26 17.2L28.2 15.8Z"/><path class="t" d="M2 34.5H38"/>`,
+    lantern: () => `<path class="s" d="M20 3V8.5"/><rect x="15.5" y="8.5" width="9" height="2.2" rx=".6" class="k"/><ellipse cx="20" cy="20.5" rx="9.5" ry="10" class="w"/><ellipse cx="20" cy="20.5" rx="9.5" ry="10" class="s"/><ellipse cx="20" cy="20.5" rx="5" ry="10" class="t"/><path class="t" d="M20 10.5V30.5M10.6 18H29.4M10.6 23H29.4"/><rect x="16" y="30" width="8" height="2" rx=".6" class="k"/><path class="s" d="M18.5 32.5V37M20 32.5V37.6M21.5 32.5V37"/>`,
+    mushroom: () => `<path class="k" d="M7 22Q8 9.5 20 9.5Q32 9.5 33 22Z"/><circle cx="14" cy="15.5" r="1.6" class="p"/><circle cx="22" cy="13" r="1.3" class="p"/><circle cx="27" cy="18" r="1.5" class="p"/><circle cx="18.5" cy="19" r="1" class="p"/><path class="p" d="M16 22Q15 30 14.5 33H25.5Q25 30 24 22Z"/><path class="s" d="M16 22Q15 30 14.5 33H25.5Q25 30 24 22"/><path class="t" d="M6 33.5Q20 32 34 33.5"/>`,
+    cat: () => `<path class="k" d="M12.5 34Q10.5 25 14.6 19.5Q12.6 15 13.6 9.5L17 13Q20 12 23 13L26.4 9.5Q27.4 15 25.4 19.5Q29.5 25 27.5 34Z"/><path class="s" d="M27 33Q35 33 33 26Q32 23.5 34 22" style="stroke-width:1.6"/><ellipse cx="17.6" cy="16.6" rx=".7" ry="1.1" class="p"/><ellipse cx="22.4" cy="16.6" rx=".7" ry="1.1" class="p"/><path class="sp" d="M14 19.4L10 18.6M14 20.2L10.2 20.8M26 19.4L30 18.6M26 20.2L29.8 20.8" style="stroke-width:.35"/>`,
+    flower: () => `<path class="s" d="M21 24Q23 31 30 36M26 31Q30 28.5 33 30"/>${blossom(19, 18, 12, false)}<path class="t" d="M19 18L16.5 13.8M19 18L22.6 14.2M19 18L14.8 19.4"/>`,
+    tea: () => `<path class="s" d="M15 4.5Q12.5 7.5 15 10Q17 12.5 15 15M21 3.5Q18.5 6.5 21 9Q23 11.5 21 14"/><path class="k" d="M9 18.5H29Q29 30 19 30Q9 30 9 18.5Z"/><path class="s" d="M28.6 21Q34 20.5 32.6 25Q31.4 28 27 27.5" style="stroke-width:1.3"/><ellipse cx="19" cy="31.6" rx="13" ry="2.2" class="p"/><ellipse cx="19" cy="31.6" rx="13" ry="2.2" class="s"/><path class="sp" d="M12 21.5Q19 22.6 26 21.5" style="stroke-width:.5" opacity=".6"/>`
+  };
+
+  // ================= Bildschirmgerüst =================
+  const app = document.getElementById("app");
+  let cur = null;
+
+  function stopCur() { if (cur && cur.stop) cur.stop(); cur = null; }
+  document.addEventListener("keydown", (e) => {
+    if (cur && cur.key) cur.key(e);
+    if (e.key === "Escape" && cur) { Snd.tap(); showHub(); }
+  });
+
+  function soundBtn() { return `<button class="icon-btn" id="sndBtn" aria-label="Sound">${Snd.isOn() ? UI.soundOn : UI.soundOff}</button>`; }
+  function wireSound() {
+    const b = document.getElementById("sndBtn");
+    if (b) b.onclick = () => { const on = Snd.toggle(); b.innerHTML = on ? UI.soundOn : UI.soundOff; Snd.tap(); };
+  }
+
+  // Swipe-Erkennung: 0 hoch, 1 rechts, 2 runter, 3 links
+  function swipe(el, cb) {
+    let sx = 0, sy = 0, id = null, fired = false;
+    el.addEventListener("pointerdown", (e) => { sx = e.clientX; sy = e.clientY; id = e.pointerId; fired = false; });
+    const test = (e, end) => {
+      if (id === null || e.pointerId !== id || fired) return;
+      const dx = e.clientX - sx, dy = e.clientY - sy;
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < (end ? 16 : 28)) return;
+      fired = true;
+      cb(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 1 : 3) : (dy > 0 ? 2 : 0));
+    };
+    el.addEventListener("pointermove", (e) => test(e, false));
+    el.addEventListener("pointerup", (e) => { test(e, true); id = null; });
+    el.addEventListener("pointercancel", () => { id = null; });
+  }
+  const KEYDIR = { ArrowUp: 0, KeyW: 0, ArrowRight: 1, KeyD: 1, ArrowDown: 2, KeyS: 2, ArrowLeft: 3, KeyA: 3 };
+
+  function openGame(G) {
+    stopCur();
+    app.innerHTML = `
+      <div class="bar">
+        <button class="icon-btn" id="backBtn" aria-label="Back">${UI.back}</button>
+        <div class="room">${t(G.name).toUpperCase()}</div>
+        ${soundBtn()}
+        <div class="count" id="head"></div>
+      </div>
+      <div class="stage-wrap"><div class="stage" id="stage"></div></div>
+      <div class="msg" id="msg"><span></span></div>
+      <div class="ctrl" id="ctrl"></div>
+      <div class="spacer"></div>`;
+    document.getElementById("backBtn").onclick = () => { Snd.tap(); showHub(); };
+    wireSound();
+    const stage = document.getElementById("stage"), msgEl = document.getElementById("msg"), head = document.getElementById("head");
+    let lastMsg = "";
+    const S = {
+      stage, ctrl: document.getElementById("ctrl"),
+      say(txt) { if (txt === lastMsg) return; lastMsg = txt; msgEl.innerHTML = `<span>${txt}</span>`; },
+      head(html) { head.innerHTML = html; },
+      best: (v) => { const k = "kw.best." + G.id; if (v === undefined) return +store.get(k) || 0; store.set(k, String(v)); },
+      overlay(title, body, btn, cb, extraBtn) {
+        const ov = document.createElement("div"); ov.className = "ov";
+        ov.innerHTML = `<div class="ov-card"><h3>${title}</h3>${body || ""}<div class="ctrl"><button class="btn fill" data-a="1"><span>${btn}</span></button>${extraBtn ? `<button class="btn" data-a="2"><span>${extraBtn[0]}</span></button>` : ""}</div></div>`;
+        ov.addEventListener("pointerdown", (e) => e.stopPropagation());
+        ov.querySelector('[data-a="1"]').onclick = (e) => { e.stopPropagation(); Snd.tap(); ov.remove(); cb(); };
+        if (extraBtn) ov.querySelector('[data-a="2"]').onclick = (e) => { e.stopPropagation(); Snd.tap(); ov.remove(); extraBtn[1](); };
+        stage.appendChild(ov);
+        return ov;
+      },
+      clearOverlay() { stage.querySelectorAll(".ov").forEach((o) => o.remove()); }
+    };
+    cur = G.start(S) || {};
+  }
+
+  // ================= Spiel 1: Mondphasen =================
+  const MOON_F = [.12, .26, .4, .5, .62, .8, 1];
+  function tileArt(v) {
+    if (v <= 7) return phase(20, 19, 11, MOON_F[v - 1]);
+    const glow = `<circle cx="20" cy="19" r="12" fill="var(--glow)" opacity=".35" filter="url(#softglow)"/>`;
+    const moonP = `<circle cx="20" cy="19" r="9.5" fill="var(--paper)"/><circle cx="17" cy="16.5" r="1.6" class="w"/><circle cx="23" cy="22" r="2.1" class="w"/><circle cx="22.4" cy="14.4" r=".9" class="w"/>`;
+    let s = glow;
+    if (v >= 9) s += `<circle cx="20" cy="19" r="13.6" class="sp" style="stroke-width:.5" opacity=".7"/>`;
+    if (v >= 10) {
+      for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; s += `<circle cx="${n(20 + Math.cos(a) * 16.4)}" cy="${n(19 + Math.sin(a) * 16.4)}" r=".7" fill="var(--paper)"/>`; }
+    }
+    if (v >= 11) {
+      for (let i = 0; i < 8; i++) {
+        const a = i / 8 * Math.PI * 2 + Math.PI / 8, px = 20 + Math.cos(a) * 12.6, py = 19 + Math.sin(a) * 12.6;
+        s += `<ellipse cx="${n(px)}" cy="${n(py)}" rx="2" ry="3.6" transform="rotate(${n(a * 180 / Math.PI + 90)} ${n(px)} ${n(py)})" fill="var(--paper)" opacity=".85"/>`;
+      }
+    }
+    return s + moonP;
+  }
+
+  const GameMoon = {
+    id: "moon",
+    name: ["Mondphasen", "Moon Phases", "Ay Evreleri"],
+    desc: ["Schiebe gleiche Monde zusammen, bis sie voll erblühen.", "Slide matching moons together until they bloom.", "Aynı ayları birleştir, dolunaya ulaş."],
+    icon: () => `<svg viewBox="0 0 40 40"><g filter="url(#brushG)"><rect x="3" y="3" width="16" height="16" rx="2" class="s"/>${phase(11, 11, 5.5, .26)}<rect x="21" y="3" width="16" height="16" rx="2" class="s"/>${phase(29, 11, 5.5, .5)}<rect x="3" y="21" width="16" height="16" rx="2" class="s"/>${phase(11, 29, 5.5, .8)}<rect x="21" y="21" width="16" height="16" rx="2" class="k"/><circle cx="29" cy="29" r="5.5" fill="var(--paper)"/></g></svg>`,
+    bestLabel: () => +store.get("kw.best.moon") || 0,
+    start(S) {
+      let grid, tiles, nextId = 1, score = 0, lock = false, won = false, over = false;
+      S.stage.innerHTML = `<svg viewBox="0 0 100 100"><g filter="url(#brushG)">
+          ${[0, 1, 2, 3].map((r) => [0, 1, 2, 3].map((c) => `<rect x="${3 + c * 24 + .6}" y="${3 + r * 24 + .6}" width="20.8" height="20.8" rx="1.6" class="w" opacity=".55"/>`).join("")).join("")}
+          ${splatters(31, 6, [2, 2, 96, 96])}
+        </g></svg>`;
+      swipe(S.stage, (d) => move(d));
+      const pos = (i) => (3 + i * 24) + "%";
+
+      function makeEl(tile, cls) {
+        const el = document.createElement("div");
+        el.className = "tl" + (tile.v >= 8 ? " dark" : "") + (cls ? " " + cls : "");
+        el.style.left = pos(tile.c); el.style.top = pos(tile.r);
+        el.innerHTML = `<svg viewBox="0 0 40 40">${tileArt(tile.v)}</svg><b>${Math.pow(2, tile.v)}</b>`;
+        tile.el = el; S.stage.appendChild(el);
+      }
+      function refresh(tile, cls) {
+        tile.el.className = "tl" + (tile.v >= 8 ? " dark" : "");
+        void tile.el.offsetWidth;
+        if (cls) tile.el.classList.add(cls);
+        tile.el.innerHTML = `<svg viewBox="0 0 40 40">${tileArt(tile.v)}</svg><b>${Math.pow(2, tile.v)}</b>`;
+      }
+      function empties() { const e = []; for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) if (!grid[r][c]) e.push([r, c]); return e; }
+      function spawn() {
+        const e = empties(); if (!e.length) return;
+        const [r, c] = pick(e), tile = { id: nextId++, v: Math.random() < .9 ? 1 : 2, r, c };
+        grid[r][c] = tile; tiles.push(tile); makeEl(tile, "new");
+      }
+      function canMove() {
+        if (empties().length) return true;
+        for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+          const v = grid[r][c].v;
+          if ((c < 3 && grid[r][c + 1].v === v) || (r < 3 && grid[r + 1][c].v === v)) return true;
+        }
+        return false;
+      }
+      function save() {
+        if (over) { store.del("kw.moon.state"); return; }
+        store.set("kw.moon.state", JSON.stringify({ g: grid.map((row) => row.map((x) => x ? x.v : 0)), s: score, w: won }));
+      }
+      function head() { S.head(`${score}<br><small>${t(TX.best)} ${Math.max(S.best(), score)}</small>`); }
+
+      function newGame(load) {
+        S.stage.querySelectorAll(".tl").forEach((e) => e.remove());
+        S.clearOverlay();
+        grid = [[], [], [], []].map(() => [null, null, null, null]); tiles = []; score = 0; won = false; over = false; lock = false;
+        let loaded = false;
+        if (load) {
+          try {
+            const st = JSON.parse(store.get("kw.moon.state"));
+            if (st && st.g) {
+              st.g.forEach((row, r) => row.forEach((v, c) => { if (v) { const tile = { id: nextId++, v, r, c }; grid[r][c] = tile; tiles.push(tile); makeEl(tile, "new"); } }));
+              score = st.s || 0; won = !!st.w; loaded = tiles.length > 0;
+            }
+          } catch (e) {}
+        }
+        if (!loaded) { spawn(); spawn(); }
+        head(); S.say(t(TX.moonStart)); save();
+      }
+
+      function move(dir) {
+        if (lock || over) return;
+        const at = (i, k) => dir === 3 ? [i, k] : dir === 1 ? [i, 3 - k] : dir === 0 ? [k, i] : [3 - k, i];
+        const ng = [[], [], [], []].map(() => [null, null, null, null]);
+        const dying = [];
+        let moved = false;
+        for (let i = 0; i < 4; i++) {
+          const line = [];
+          for (let k = 0; k < 4; k++) { const [r, c] = at(i, k); if (grid[r][c]) line.push(grid[r][c]); }
+          const outL = [];
+          for (const tile of line) {
+            const last = outL[outL.length - 1];
+            if (last && last.v === tile.v && !last.m) { last.m = true; tile.into = last; dying.push(tile); }
+            else outL.push(tile);
+          }
+          outL.forEach((tile, k) => { const [r, c] = at(i, k); if (tile.r !== r || tile.c !== c) moved = true; tile.r = r; tile.c = c; ng[r][c] = tile; });
+        }
+        dying.forEach((tile) => { tile.r = tile.into.r; tile.c = tile.into.c; moved = true; });
+        if (!moved) { tiles.forEach((x) => x.m = false); return; }
+        grid = ng; lock = true; Snd.slide();
+        tiles.forEach((tile) => { tile.el.style.left = pos(tile.c); tile.el.style.top = pos(tile.r); });
+        setTimeout(() => {
+          let gain = 0, topV = 0;
+          dying.forEach((tile) => tile.el.remove());
+          tiles = tiles.filter((x) => !dying.includes(x));
+          tiles.forEach((tile) => {
+            if (tile.m) { tile.v++; tile.m = false; gain += Math.pow(2, tile.v); topV = Math.max(topV, tile.v); refresh(tile, "merge"); }
+          });
+          if (topV) { Snd.step(topV + 1, .055 + topV * .003); buzz(8); }
+          score += gain;
+          if (score > S.best()) S.best(score);
+          spawn(); head();
+          if (topV === 7) S.say(t(TX.moonFull));
+          if (topV >= 11 && !won) {
+            won = true; Snd.win(); buzz(30);
+            S.overlay(t(TX.moonWin), `<svg viewBox="0 0 40 40" width="110" height="110" style="--sw:.8"><rect x="2" y="2" width="36" height="36" rx="3" class="k"/>${tileArt(11)}</svg><p>${t(TX.moonWinSub)}</p>`, t(TX.keepOn), () => {});
+          }
+          if (!canMove()) {
+            over = true; Snd.fail();
+            const rec = score >= S.best() && score > 0;
+            setTimeout(() => S.overlay(t(TX.moonOver), `<p class="big">${score}</p><p class="small">${rec ? t(TX.newRecord) : t(TX.best) + " " + S.best()}</p>`, t(TX.again), () => newGame(false)), 450);
+          }
+          save(); lock = false;
+        }, 115);
+      }
+
+      S.ctrl.innerHTML = `<button class="btn" id="ng">${UI.turn}<span>${t(TX.newGame)}</span></button>`;
+      S.ctrl.querySelector("#ng").onclick = () => { Snd.tap(); store.del("kw.moon.state"); newGame(false); };
+      newGame(true);
+      return {
+        key(e) { if (KEYDIR.hasOwnProperty(e.code)) { e.preventDefault(); move(KEYDIR[e.code]); } }
+      };
+    }
+  };
+
+  // ================= Spiel 2: Tuschepaare =================
+  const backArt = `<svg viewBox="0 0 40 40">${(() => {
+    let s = `<path d="M24 9A11 11 0 1 0 24 31A14 14 0 0 1 24 9Z" fill="var(--paper)" opacity=".92"/>`;
+    [[29, 12], [32, 20], [28.5, 27]].forEach(([x, y], i) => { s += `<circle cx="${x}" cy="${y}" r="${.7 + i * .15}" fill="var(--paper)" opacity=".7"/>`; });
+    return s;
+  })()}</svg>`;
+
+  const GamePairs = {
+    id: "pairs",
+    name: ["Tuschepaare", "Ink Pairs", "Mürekkep Eşleri"],
+    desc: ["Merke dir die Bilder und finde alle Paare.", "Remember the pictures and find every pair.", "Resimleri aklında tut, bütün çiftleri bul."],
+    icon: () => `<svg viewBox="0 0 40 40"><g filter="url(#brushG)"><g transform="rotate(-10 14 21)"><rect x="5" y="9" width="17" height="23" rx="2" class="k"/><path d="M15 15A5 5 0 1 0 15 25A6.5 6.5 0 0 1 15 15Z" fill="var(--paper)"/></g><g transform="rotate(8 27 20)"><rect x="18" y="7" width="17" height="23" rx="2" class="p"/><rect x="18" y="7" width="17" height="23" rx="2" class="s"/><g transform="translate(16.5 8) scale(.5)">${MOTIFS.fish()}</g></g></g></svg>`,
+    bestLabel: () => +store.get("kw.best.pairs") || 0,
+    bestLow: true,
+    start(S) {
+      let deck, open, matched, moves, t0, timer, lock;
+      S.stage.innerHTML = `<svg viewBox="0 0 100 100"><g filter="url(#brushG)">${splatters(73, 7, [2, 2, 96, 96])}</g></svg><div class="mem" id="mem"></div>`;
+      const mem = S.stage.querySelector("#mem");
+      const fmt = (ms) => { const s = Math.floor(ms / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+      function head() {
+        const b = S.best();
+        S.head(`${moves}<br><small>${t(TX.moves)}${b ? " · " + t(TX.best) + " " + b : ""}</small>`);
+      }
+      function newGame() {
+        clearInterval(timer); S.clearOverlay();
+        const kinds = shuffle(Object.keys(MOTIFS)).slice(0, 8);
+        deck = shuffle(kinds.concat(kinds)); open = []; matched = 0; moves = 0; t0 = 0; lock = false;
+        mem.innerHTML = deck.map((k, i) => `<button class="mc" data-i="${i}" aria-label="card"><div class="in"><div class="f back">${backArt}</div><div class="f front"><svg viewBox="0 0 40 40"><g filter="url(#brushG)">${MOTIFS[k]()}</g></svg></div></div></button>`).join("");
+        [...mem.children].forEach((b, i) => { b.style.animation = `pop .45s ${i * .025}s cubic-bezier(.2,1.3,.4,1) both`; b.onclick = () => flip(b, i); });
+        head(); S.say(t(TX.memStart));
+      }
+      function flip(b, i) {
+        if (lock || b.classList.contains("up")) return;
+        if (!t0) { t0 = Date.now(); timer = setInterval(() => S.say(fmt(Date.now() - t0)), 500); }
+        b.classList.add("up"); Snd.tap(); open.push([b, i]);
+        if (open.length < 2) return;
+        moves++; head();
+        const [[b1, i1], [b2, i2]] = open; open = [];
+        if (deck[i1] === deck[i2]) {
+          matched++;
+          setTimeout(() => { b1.classList.add("done"); b2.classList.add("done"); Snd.step(3 + matched, .06); Snd.step(5 + matched, .045); buzz(10); }, 260);
+          if (matched === 8) {
+            clearInterval(timer);
+            const ms = Date.now() - t0, prev = S.best(), rec = !prev || moves < prev;
+            if (rec) S.best(moves);
+            const stars = moves <= 12 ? 3 : moves <= 17 ? 2 : 1;
+            setTimeout(() => {
+              Snd.win(); S.say(fmt(ms));
+              S.overlay(t(TX.memWin), `${rating(stars)}<p class="big">${moves}</p><p class="small">${t(TX.moves)} · ${fmt(ms)}${rec ? "<br>" + t(TX.newRecord) : ""}</p>`, t(TX.again), newGame);
+              head();
+            }, 900);
+          } else S.say(pick(TX.memGood[IDX[lang]]));
+        } else {
+          lock = true;
+          setTimeout(() => { b1.classList.remove("up"); b2.classList.remove("up"); lock = false; }, 850);
+        }
+      }
+      S.ctrl.innerHTML = `<button class="btn" id="ng">${UI.turn}<span>${t(TX.newGame)}</span></button>`;
+      S.ctrl.querySelector("#ng").onclick = () => { Snd.tap(); newGame(); };
+      newGame();
+      return { stop() { clearInterval(timer); } };
+    }
+  };
+
+  // ================= Spiel 3: Glühwurm =================
+  function nightSky(seed, opts) {
+    const r = rng(seed); let s = `<rect x="-2" y="-2" width="104" height="104" class="k"/>`;
+    s += `<rect x="-2" y="-2" width="104" height="104" fill="var(--paper)" opacity=".09" filter="url(#wash)"/>`;
+    for (let i = 0; i < (opts.stars || 0); i++) s += `<circle cx="${n(r() * 100)}" cy="${n(r() * 100)}" r="${n(.15 + r() * .3)}" fill="var(--paper)" opacity="${n(.2 + r() * .4)}"/>`;
+    if (opts.grass) {
+      let d = ""; for (let i = 0; i < 90; i++) { const x = r() * 100; d += `M${n(x)} 100Q${n(x + (r() - .5) * 3)} ${n(96 - r() * 4)} ${n(x + (r() - .5) * 5)} ${n(92 - r() * 8)}`; }
+      s += `<path d="${d}" fill="none" stroke="var(--paper)" stroke-width=".35" opacity=".13"/>`;
+    }
+    return s;
+  }
+  const GameWorm = {
+    id: "worm",
+    name: ["Glühwurm", "Glowworm", "Işıl Solucan"],
+    desc: ["Sammle Glühwürmchen in der Nacht – beiß dich nicht selbst.", "Gather fireflies in the night – don't bite your own tail.", "Gecede ateş böceklerini topla – kendi kuyruğunu ısırma."],
+    icon: () => `<svg viewBox="0 0 40 40"><g filter="url(#brushG)"><rect x="2" y="2" width="36" height="36" rx="3" class="k"/></g><path d="M8 30Q8 22 15 22Q21 22 21 16Q21 10 28 10" fill="none" stroke="var(--glow)" stroke-width="7" stroke-linecap="round" opacity=".25" filter="url(#softglow)"/><path d="M8 30Q8 22 15 22Q21 22 21 16Q21 10 28 10" fill="none" stroke="var(--paper)" stroke-width="3.6" stroke-linecap="round"/><circle cx="28.8" cy="9" r=".6" class="k"/><circle cx="31" cy="28" r="3.4" fill="var(--glow)" opacity=".4" filter="url(#softglow)"/><circle cx="31" cy="28" r="1.2" fill="var(--glow)"/></svg>`,
+    bestLabel: () => +store.get("kw.best.worm") || 0,
+    start(S) {
+      const N = 16, C = 100 / N;
+      const DIRS = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+      let body, dir, q, food, score, speed, state = "ready", acc = 0, last = 0, prevTail = null, eaten, raf = 0, stopped = false;
+      S.stage.classList.add("night", "small");
+      let dots = ""; for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) dots += `<circle cx="${n((x + .5) * C)}" cy="${n((y + .5) * C)}" r=".22" fill="var(--paper)" opacity=".1"/>`;
+      S.stage.innerHTML = `<svg viewBox="0 0 100 100">
+          <g filter="url(#brushG)">${nightSky(5, { stars: 26, grass: true })}${dots}</g>
+          <g id="food"></g>
+          <path id="glow" fill="none" stroke="var(--glow)" stroke-width="${n(C * 1.5)}" stroke-linecap="round" stroke-linejoin="round" opacity=".2" filter="url(#softglow)"/>
+          <path id="worm" fill="none" stroke="var(--paper)" stroke-width="${n(C * .72)}" stroke-linecap="round" stroke-linejoin="round"/>
+          <path id="rings" fill="none" stroke="var(--ink)" stroke-width=".35" stroke-dasharray=".6 2.6" stroke-linecap="round" opacity=".35"/>
+          <g id="eyes"></g>
+        </svg>`;
+      const $ = (id) => S.stage.querySelector("#" + id);
+      const elW = $("worm"), elG = $("glow"), elR = $("rings"), elE = $("eyes"), elF = $("food");
+      const ctr = (p) => [(p[0] + .5) * C, (p[1] + .5) * C];
+      const lerp = (a, b, u) => [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u];
+      function head() { S.head(`${score}<br><small>${t(TX.best)} ${Math.max(S.best(), score)}</small>`); }
+
+      function placeFood() {
+        const free = [];
+        for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (!body.some((b) => b[0] === x && b[1] === y)) free.push([x, y]);
+        const [x, y] = pick(free);
+        food = { x, y, gold: eaten > 2 && Math.random() < .16 };
+        const [cx, cy] = ctr([x, y]);
+        elF.innerHTML = `<g class="ffly" transform="translate(${n(cx)} ${n(cy)})" style="animation-duration:${food.gold ? .8 : 1.4}s">
+          <circle r="${food.gold ? 5 : 3.6}" fill="var(--glow)" opacity="${food.gold ? .55 : .4}" filter="url(#fog)"/>
+          <circle r="${food.gold ? 1.7 : 1.15}" fill="var(--glow)"/>
+          <path d="M-1.4 -.9Q-.4 -2.1 0 -.6Q.4 -2.1 1.4 -.9" fill="none" stroke="var(--paper)" stroke-width=".25" opacity=".7"/>
+        </g>`;
+      }
+      function reset() {
+        body = [[6, 8], [5, 8], [4, 8], [3, 8]]; dir = 1; q = []; score = 0; speed = 160; eaten = 0; prevTail = null; acc = 0;
+        elW.classList.remove("dead-worm");
+        placeFood(); head(); render(1);
+      }
+      function turn(d) {
+        if (state === "dead") return;
+        if (state === "ready") { if ((d + 2) % 4 === dir) return; if (d !== dir) q.push(d); go(); return; }
+        const lastD = q.length ? q[q.length - 1] : dir;
+        if (d === lastD || (d + 2) % 4 === lastD || q.length > 2) return;
+        q.push(d);
+      }
+      function step() {
+        if (q.length) dir = q.shift();
+        const h = body[0], nh = [h[0] + DIRS[dir][0], h[1] + DIRS[dir][1]];
+        const eat = nh[0] === food.x && nh[1] === food.y;
+        const check = eat ? body : body.slice(0, -1);
+        if (nh[0] < 0 || nh[1] < 0 || nh[0] >= N || nh[1] >= N || check.some((b) => b[0] === nh[0] && b[1] === nh[1])) return die();
+        body.unshift(nh);
+        if (eat) {
+          prevTail = null; eaten++;
+          score += food.gold ? 3 : 1;
+          if (food.gold) S.say(t(TX.wormGold));
+          Snd.step(Math.min(12, 2 + (eaten % 11)), food.gold ? .08 : .055); if (food.gold) Snd.step(12, .05);
+          buzz(8);
+          speed = Math.max(78, 160 - eaten * 3.4);
+          if (score > S.best()) S.best(score);
+          placeFood(); head();
+        } else prevTail = body.pop();
+      }
+      function die() {
+        state = "dead"; Snd.fail(); buzz([20, 40, 20]); elW.classList.add("dead-worm");
+        prevTail = null; render(1);
+        const rec = score >= S.best() && score > 0;
+        setTimeout(() => {
+          if (stopped) return;
+          S.overlay(t(TX.wormOver), `<p class="big">${score}</p><p class="small">${rec ? t(TX.newRecord) : t(TX.best) + " " + S.best()}</p>`, t(TX.again), () => { reset(); state = "ready"; S.say(t(TX.wormStart)); });
+        }, 800);
+      }
+      function render(p) {
+        const pts = [lerp(ctr(body[1]), ctr(body[0]), p)];
+        for (let i = 1; i < body.length; i++) pts.push(ctr(body[i]));
+        if (prevTail) pts.push(lerp(ctr(prevTail), ctr(body[body.length - 1]), p));
+        const d = "M" + pts.map((q) => n(q[0]) + " " + n(q[1])).join("L");
+        elW.setAttribute("d", d); elG.setAttribute("d", d); elR.setAttribute("d", d);
+        const [hx, hy] = pts[0], [dx, dy] = DIRS[dir], px = -dy, py = dx;
+        elE.innerHTML = [1, -1].map((s) => `<circle cx="${n(hx + dx * 1.1 + px * s * 1.2)}" cy="${n(hy + dy * 1.1 + py * s * 1.2)}" r=".62" class="k"/>`).join("");
+      }
+      function loop(ts) {
+        if (stopped) return;
+        raf = requestAnimationFrame(loop);
+        const dt = Math.min(100, ts - (last || ts)); last = ts;
+        if (state !== "play") return;
+        acc += dt;
+        while (acc >= speed && state === "play") { acc -= speed; step(); }
+        if (state === "play") render(Math.min(1, acc / speed));
+      }
+      function go() { if (state !== "ready") return; S.clearOverlay(); state = "play"; acc = 0; S.say(""); }
+
+      swipe(S.stage, turn);
+      S.ctrl.innerHTML = `<div class="pad">
+          <span></span><button class="padb" data-d="0" aria-label="up">${UI.arrow(0)}</button><span></span>
+          <button class="padb" data-d="3" aria-label="left">${UI.arrow(-90)}</button><button class="padb" data-d="2" aria-label="down">${UI.arrow(180)}</button><button class="padb" data-d="1" aria-label="right">${UI.arrow(90)}</button>
+        </div>`;
+      S.ctrl.querySelectorAll(".padb").forEach((b) => b.addEventListener("pointerdown", (e) => { e.preventDefault(); turn(+b.dataset.d); }));
+      reset(); S.say(t(TX.wormStart));
+      raf = requestAnimationFrame(loop);
+      return {
+        stop() { stopped = true; cancelAnimationFrame(raf); },
+        key(e) { if (KEYDIR.hasOwnProperty(e.code)) { e.preventDefault(); turn(KEYDIR[e.code]); } }
+      };
+    }
+  };
+
+  // ================= Spiel 4: Laternen =================
+  function lanternSVG(cx, cy, lit, s) {
+    s = s || 1;
+    const k = (v) => n(v * s);
+    let o = "";
+    o += `<path d="M${n(cx)} ${n(cy - 10 * s)}V${n(cy - 6.3 * s)}" stroke="var(--paper)" stroke-width="${k(.3)}" opacity=".4"/>`;
+    if (lit) o += `<circle cx="${n(cx)}" cy="${n(cy)}" r="${k(9)}" fill="var(--glow)" opacity=".3" filter="url(#fog)"/>`;
+    o += `<rect x="${n(cx - 2.4 * s)}" y="${n(cy - 6.9 * s)}" width="${k(4.8)}" height="${k(1.3)}" rx="${k(.4)}" fill="${lit ? "#5a4a3a" : "#3b3540"}"/>`;
+    o += `<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="${k(5.1)}" ry="${k(5.7)}" fill="${lit ? "var(--glow)" : "#26212b"}" stroke="${lit ? "rgba(18,16,20,.35)" : "rgba(235,228,212,.28)"}" stroke-width="${k(.35)}"/>`;
+    if (lit) o += `<ellipse cx="${n(cx)}" cy="${n(cy + .6 * s)}" rx="${k(2.2)}" ry="${k(2.8)}" fill="#fff8e2" opacity=".85" filter="url(#softglow)"/><path d="M${n(cx)} ${n(cy - 1.4 * s)}Q${n(cx + 1.1 * s)} ${n(cy + .6 * s)} ${n(cx)} ${n(cy + 1.4 * s)}Q${n(cx - 1.1 * s)} ${n(cy + .6 * s)} ${n(cx)} ${n(cy - 1.4 * s)}Z" fill="var(--ink)" opacity=".28"/>`;
+    const rc = lit ? "rgba(18,16,20,.3)" : "rgba(235,228,212,.16)";
+    o += `<ellipse cx="${n(cx)}" cy="${n(cy)}" rx="${k(2.5)}" ry="${k(5.7)}" fill="none" stroke="${rc}" stroke-width="${k(.3)}"/><path d="M${n(cx)} ${n(cy - 5.7 * s)}V${n(cy + 5.7 * s)}M${n(cx - 4.6 * s)} ${n(cy - 2.2 * s)}H${n(cx + 4.6 * s)}M${n(cx - 4.6 * s)} ${n(cy + 2.2 * s)}H${n(cx + 4.6 * s)}" stroke="${rc}" stroke-width="${k(.25)}"/>`;
+    o += `<rect x="${n(cx - 2 * s)}" y="${n(cy + 5.4 * s)}" width="${k(4)}" height="${k(1.1)}" rx="${k(.35)}" fill="${lit ? "#5a4a3a" : "#3b3540"}"/>`;
+    o += `<path d="M${n(cx - .6 * s)} ${n(cy + 6.5 * s)}V${n(cy + 8.6 * s)}M${n(cx)} ${n(cy + 6.5 * s)}V${n(cy + 9 * s)}M${n(cx + .6 * s)} ${n(cy + 6.5 * s)}V${n(cy + 8.6 * s)}" stroke="${lit ? "#8a6f4f" : "rgba(235,228,212,.25)"}" stroke-width="${k(.25)}"/>`;
+    return o;
+  }
+  const GameLanterns = {
+    id: "lan",
+    name: ["Laternen", "Lanterns", "Fenerler"],
+    desc: ["Zünde alle Laternen an. Jede steckt ihre Nachbarn an.", "Light every lantern. Each one flips its neighbours.", "Bütün fenerleri yak. Her biri komşularını da değiştirir."],
+    icon: () => `<svg viewBox="0 0 40 40"><g filter="url(#brushG)"><rect x="2" y="2" width="36" height="36" rx="3" class="k"/></g><g>${lanternSVG(13, 19, true, 1.25)}${lanternSVG(28, 23, false, 1.1)}</g></svg>`,
+    bestLabel: () => +store.get("kw.lant.lvl") || 0,
+    bestIsLevel: true,
+    start(S) {
+      let lvl = Math.max(1, +store.get("kw.lant.lvl") || 1), state, startState, sol, pressed, moves, k, done, hintIdx = -1, swingSet = new Set();
+      S.stage.classList.add("night");
+      S.stage.innerHTML = `<svg viewBox="0 0 100 100"><g filter="url(#brushG)">${nightSky(19, { stars: 34 })}</g><g id="lans"></g></svg>`;
+      const lans = S.stage.querySelector("#lans");
+      const toggle = (st, i) => { const x = i % 5, y = i / 5 | 0; [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dx, dy]) => { const X = x + dx, Y = y + dy; if (X >= 0 && X < 5 && Y >= 0 && Y < 5) st[Y * 5 + X] ^= 1; }); };
+      function head() { S.head(`${t(TX.level)} ${lvl}<br><small>${moves} ${t(TX.moves)}</small>`); }
+      function gen() {
+        k = Math.min(2 + lvl, 13);
+        do {
+          sol = new Set(); while (sol.size < k) sol.add(Math.random() * 25 | 0);
+          state = Array(25).fill(1); sol.forEach((i) => toggle(state, i));
+        } while (state.every((v) => v));
+        startState = state.slice();
+      }
+      function begin(newLevel) {
+        S.clearOverlay();
+        if (newLevel) gen(); else state = startState.slice();
+        pressed = new Set(); moves = 0; done = false; hintIdx = -1; swingSet = new Set(state.map((_, i) => i));
+        render(); head(); S.say(t(TX.lanStart)); swingSet = new Set();
+      }
+      function render() {
+        let s = "";
+        for (let i = 0; i < 25; i++) {
+          const x = i % 5, y = i / 5 | 0, cx = (x + .5) * 20, cy = (y + .5) * 20 + 1;
+          s += `<g class="lan${swingSet.has(i) ? " swing" : ""}" style="transform-box:view-box;transform-origin:${cx}px ${cy - 10}px">${lanternSVG(cx, cy, !!state[i])}</g>`;
+          if (i === hintIdx) s += `<circle class="hintc" cx="${cx}" cy="${cy}" r="8.6" fill="none" stroke="var(--paper)" stroke-width=".5" stroke-dasharray="1.4 1.2"/>`;
+          s += `<rect class="hit" data-i="${i}" x="${x * 20}" y="${y * 20}" width="20" height="20"/>`;
+        }
+        lans.innerHTML = s;
+      }
+      lans.addEventListener("pointerdown", (e) => {
+        const el = e.target.closest("[data-i]"); if (!el || done) return;
+        const i = +el.dataset.i;
+        toggle(state, i); pressed.has(i) ? pressed.delete(i) : pressed.add(i); moves++;
+        const x = i % 5, y = i / 5 | 0;
+        swingSet = new Set([i, i - 5, i + 5].concat(x > 0 ? [i - 1] : [], x < 4 ? [i + 1] : []).filter((j) => j >= 0 && j < 25));
+        if (hintIdx === i) hintIdx = -1;
+        Snd.step((4 - y) + x + (state[i] ? 3 : 0), .05); buzz(6);
+        render(); head(); swingSet = new Set();
+        const litN = state.reduce((a, b) => a + b, 0);
+        if (litN === 25) {
+          done = true;
+          lvl++; store.set("kw.lant.lvl", String(lvl));
+          const stars = moves <= k ? 3 : moves <= k * 1.6 ? 2 : 1;
+          setTimeout(() => {
+            Snd.win(); buzz(25);
+            S.overlay(t(TX.lanWin), `${rating(stars)}<p class="small">${moves} ${t(TX.moves)}</p>`, t(TX.nextLevel), () => begin(true));
+          }, 650);
+        } else if (litN >= 21) S.say("✦ " + (25 - litN) + " ✦");
+      });
+      function hint() {
+        const need = []; for (let i = 0; i < 25; i++) if (sol.has(i) !== pressed.has(i)) need.push(i);
+        if (!need.length || done) return;
+        hintIdx = pick(need); Snd.step(9, .04); render(); S.say(t(TX.lanHint));
+      }
+      S.ctrl.innerHTML = `<button class="btn" id="hb">${UI.bulb}<span>${t(TX.hint)}</span></button><button class="btn" id="rs">${UI.turn}<span>${t(TX.restart)}</span></button>`;
+      S.ctrl.querySelector("#hb").onclick = () => { Snd.tap(); hint(); };
+      S.ctrl.querySelector("#rs").onclick = () => { Snd.tap(); begin(false); };
+      gen(); begin(false);
+      return {};
+    }
+  };
+
+  // ================= Spiel 5: Nachtfalter =================
+  function bamboo(gTop, gBot, seed) {
+    const r = rng(seed), W = 7;
+    let s = `<path class="k" d="M0 -3H${W}V${n(gTop - 1.4)}L0 ${n(gTop + 1.2)}Z"/>`;
+    s += `<path class="k" d="M0 ${n(gBot + 1.4)}L${W} ${n(gBot - 1.2)}V93H0Z"/>`;
+    let nodes = "", leaves = "";
+    for (let y = gTop - 9 - r() * 4; y > 2; y -= 10 + r() * 3) {
+      nodes += `M.5 ${n(y)}Q3.5 ${n(y + .9)} 6.5 ${n(y)}`;
+      if (r() < .35) { const side = r() < .5; leaves += side ? `<path class="k" d="M${W} ${n(y)}Q11 ${n(y - 3)} 15.5 ${n(y - 1.4)}Q11 ${n(y + .8)} ${W} ${n(y + .6)}Z"/>` : `<path class="k" d="M0 ${n(y)}Q-4 ${n(y - 3)} -8.5 ${n(y - 1.4)}Q-4 ${n(y + .8)} 0 ${n(y + .6)}Z"/>`; }
+    }
+    for (let y = gBot + 9 + r() * 4; y < 90; y += 10 + r() * 3) {
+      nodes += `M.5 ${n(y)}Q3.5 ${n(y + .9)} 6.5 ${n(y)}`;
+      if (r() < .3) leaves += `<path class="k" d="M${W} ${n(y)}Q11 ${n(y - 3)} 15.5 ${n(y - 1.6)}Q11 ${n(y + .8)} ${W} ${n(y + .6)}Z"/>`;
+    }
+    s += `<path d="${nodes}" fill="none" stroke="var(--paper)" stroke-width=".45" opacity=".55"/><path d="M2 -3V${n(gTop - 2)}M2 ${n(gBot + 2)}V93" stroke="var(--paper)" stroke-width=".3" opacity=".2"/>` + leaves;
+    return s;
+  }
+  const mothArt = `<g id="wing"><path class="k" d="M.4 -.2Q-1.5 -6.8 -6.4 -6.1Q-7.6 -2.6 .4 -.2Z"/><circle cx="-3.9" cy="-3.9" r=".85" fill="var(--paper)"/><circle cx="-3.9" cy="-3.9" r=".35" class="k"/></g>
+    <path class="k" d="M0 .2Q-4.4 4 -5.4 2.4Q-5.2 .5 0 .2Z" opacity=".85"/>
+    <ellipse cx="-.6" cy="0" rx="3" ry="1.15" class="k"/><circle cx="2.4" cy="-.3" r=".95" class="k"/>
+    <path d="M2.9 -.9Q4 -3.2 5.7 -3.4M2.6 -1Q3.2 -3.4 4.6 -4.2" fill="none" stroke="var(--ink)" stroke-width=".3" stroke-linecap="round"/>`;
+
+  const GameMoth = {
+    id: "moth",
+    name: ["Nachtfalter", "Night Moth", "Gece Kelebeği"],
+    desc: ["Tippe zum Flattern und flieg durch den Bambushain.", "Tap to flutter through the bamboo grove.", "Kanat çırp ve bambu korusundan geç."],
+    icon: () => `<svg viewBox="0 0 40 40"><g filter="url(#brushG)"><circle cx="27" cy="13" r="9" class="w"/><circle cx="27" cy="13" r="9" class="t"/><path class="k" d="M4 2H10V14L4 16Z"/><path class="k" d="M4 27L10 25V39H4Z"/><path class="sp" d="M4.5 8Q7 9 9.5 8M4.5 32Q7 33 9.5 32" style="stroke-width:.6"/><g transform="translate(22 22) scale(1.7)">${mothArt}</g></g></svg>`,
+    bestLabel: () => +store.get("kw.best.moth") || 0,
+    start(S) {
+      const GROUND = 90, MX = 30, R = 2.5, G = 175, FLAP = -60, SPACING = 42, W = 7;
+      let y, vy, obs, speed, score, state = "ready", last = 0, raf = 0, stopped = false, tt = 0, flapT = -9, scroll = 0, seed = 1;
+      let grassD = ""; { const r = rng(3); for (let i = 0; i < 60; i++) { const x = r() * 100; grassD += `M${n(x)} 92Q${n(x + (r() - .5) * 2)} ${n(89 - r() * 2)} ${n(x + (r() - .5) * 3)} ${n(87 - r() * 3)}`; } }
+      const fgOne = `<path class="k" d="M0 91Q25 89.5 50 91T100 91V101H0Z"/><path d="${grassD}" class="t" style="stroke-width:.5"/>`;
+      S.stage.innerHTML = `<svg viewBox="0 0 100 100">
+          <g filter="url(#brush)">
+            <rect x="-2" y="-2" width="104" height="104" class="w" opacity=".55" filter="url(#wash)"/>
+            <circle cx="70" cy="27" r="22" fill="var(--paper)" opacity=".55" filter="url(#fog)"/>
+            <circle cx="70" cy="27" r="15" class="p"/><circle cx="70" cy="27" r="15" class="t"/>
+            <circle cx="65" cy="23" r="2.6" class="w"/><circle cx="74" cy="31" r="3.4" class="w"/><circle cx="73" cy="21" r="1.4" class="w"/>
+            <path class="w" d="M-2 92V66Q12 54 26 64Q38 52 52 62Q66 50 82 61Q94 56 102 63V92Z" opacity=".9"/>
+            <path class="w" d="M-2 92V76Q18 68 34 75Q52 66 70 74Q86 68 102 74V92Z" opacity="1.4"/>
+            ${splatters(41, 6, [2, 2, 96, 50])}
+          </g>
+          <g id="obs"></g>
+          <g id="moth">${mothArt}</g>
+          <g id="fg"><g>${fgOne}</g><g transform="translate(100 0)">${fgOne}</g></g>
+        </svg>`;
+      const $ = (id) => S.stage.querySelector("#" + id);
+      const elObs = $("obs"), elMoth = $("moth"), elWing = $("wing"), elFg = $("fg");
+      function head() { S.head(`${score}<br><small>${t(TX.best)} ${Math.max(S.best(), score)}</small>`); }
+      function reset() {
+        y = 46; vy = 0; obs = []; speed = 30; score = 0; scroll = 0; elObs.innerHTML = ""; seed = (Math.random() * 1e6) | 0;
+        head(); render();
+      }
+      function spawn(x) {
+        const gap = Math.max(25, 34 - score * .45), c = gap / 2 + 9 + Math.random() * (GROUND - gap - 20);
+        const o = { x, gTop: c - gap / 2, gBot: c + gap / 2, passed: false };
+        o.el = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        o.el.innerHTML = bamboo(o.gTop, o.gBot, seed++);
+        elObs.appendChild(o.el); obs.push(o);
+      }
+      function flap() {
+        if (state === "dead") return;
+        if (state === "ready") { S.clearOverlay(); state = "play"; S.say(""); spawn(108); }
+        vy = FLAP; flapT = tt; Snd.flap();
+      }
+      function die() {
+        if (state === "dead") return;
+        state = "dead"; Snd.thud(); setTimeout(() => Snd.fail(), 120); buzz([25, 30, 25]);
+        const rec = score >= S.best() && score > 0;
+        setTimeout(() => {
+          if (stopped) return;
+          S.overlay(t(TX.mothOver), `<p class="big">${score}</p><p class="small">${rec ? t(TX.newRecord) : t(TX.best) + " " + S.best()}</p>`, t(TX.again), () => { reset(); state = "ready"; S.say(t(TX.mothStart)); });
+        }, 900);
+      }
+      function render() {
+        const rot = state === "ready" ? Math.sin(tt * 2) * 6 : Math.max(-25, Math.min(55, vy * .55));
+        elMoth.setAttribute("transform", `translate(${MX} ${n(y)}) rotate(${n(rot)})`);
+        const since = tt - flapT;
+        const wing = state === "dead" && y >= GROUND - R - .1 ? .3 : since < .18 ? 1 - Math.sin(since / .18 * Math.PI) * 1.5 : .72 + Math.sin(tt * 22) * .28;
+        elWing.setAttribute("transform", `scale(1 ${n(wing)})`);
+        obs.forEach((o) => o.el.setAttribute("transform", `translate(${n(o.x)} 0)`));
+        elFg.setAttribute("transform", `translate(${n(-(scroll % 100))} 0)`);
+      }
+      function loop(ts) {
+        if (stopped) return;
+        raf = requestAnimationFrame(loop);
+        const dt = Math.min(.033, (ts - (last || ts)) / 1000); last = ts; tt += dt;
+        if (state === "ready") { y = 46 + Math.sin(tt * 3) * 2.2; scroll += dt * 10; }
+        else if (state === "play") {
+          vy += G * dt; y += vy * dt; scroll += dt * speed;
+          if (y < R) { y = R; vy = 0; }
+          obs.forEach((o) => o.x -= speed * dt);
+          if (obs.length && obs[0].x < -20) { obs[0].el.remove(); obs.shift(); }
+          if (!obs.length || obs[obs.length - 1].x < 108 - SPACING) spawn(108);
+          for (const o of obs) {
+            if (!o.passed && o.x + W < MX - R) {
+              o.passed = true; score++; speed = Math.min(44, 30 + score * .5);
+              Snd.step(3 + (score % 9), .05); if (score > S.best()) S.best(score); head();
+            }
+            if (MX + R * .9 > o.x && MX - R * .9 < o.x + W && (y - R * .8 < o.gTop || y + R * .8 > o.gBot)) die();
+          }
+          if (y + R >= GROUND) { y = GROUND - R; die(); }
+        } else if (state === "dead") {
+          if (y < GROUND - R) { vy += G * dt; y = Math.min(GROUND - R, y + vy * dt); }
+        }
+        render();
+      }
+      S.stage.addEventListener("pointerdown", (e) => { if (e.target.closest(".ov")) return; e.preventDefault(); flap(); });
+      S.ctrl.innerHTML = "";
+      reset(); S.say(t(TX.mothStart));
+      raf = requestAnimationFrame(loop);
+      return {
+        stop() { stopped = true; cancelAnimationFrame(raf); },
+        key(e) { if (e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW") { e.preventDefault(); if (!e.repeat) flap(); } }
+      };
+    }
+  };
+
+  const GAMES = [GameMoon, GamePairs, GameWorm, GameLanterns, GameMoth];
+
+  // ================= Übersicht =================
+  function heroSVG() {
+    const r = rng(9); let grass = "";
+    for (let i = 0; i < 50; i++) { const x = 6 + r() * 88; grass += `M${n(x)} 86l${n(r() - .5)} -${n(1 + r() * 3)}`; }
+    return `<svg class="hero" viewBox="0 0 100 92" aria-hidden="true">
+      <circle cx="58" cy="32" r="26" fill="var(--paper)" opacity=".5" filter="url(#fog)"/>
+      <g filter="url(#brush)">
+        <circle cx="50" cy="46" r="43" class="w" filter="url(#wash)" opacity="2.2"/>
+        ${phase(58, 30, 13, .74)}
+        <path class="k" d="M15 87V12H20.5V87Z"/><path d="M15.4 30Q17.8 30.8 20.1 30M15.4 50Q17.8 50.8 20.1 50M15.4 68Q17.8 68.8 20.1 68" class="sp" style="stroke-width:.5"/>
+        <path class="k" d="M20.5 30Q26 26.5 31 28.4Q26 30.6 20.5 30.6Z"/><path class="k" d="M15 50Q9.5 46.5 4.5 48.4Q9.5 50.6 15 50.6Z"/>
+        <path class="k" d="M24 87V40H28V87Z" opacity=".85"/><path d="M24.3 58Q26 58.6 27.7 58" class="sp" style="stroke-width:.4"/>
+        <path class="t" d="M80 8V21"/>
+        <path class="k" d="M6 86Q50 81 94 86V90H6Z"/>
+        <path class="t" d="${grass}"/>
+        ${splatters(61, 5, [6, 6, 88, 74])}
+      </g>
+      <g>${lanternSVG(80, 28.5, true, .95)}</g>
+      <g transform="translate(44 60) rotate(-14) scale(1.25)">${mothArt.replace('id="wing"', "")}</g>
+      ${[[66, 66, 0], [86, 58, .6], [38, 74, 1.1], [72, 78, 1.6]].map(([x, y, d]) => `<g class="ffly" style="animation-delay:${d}s"><circle cx="${x}" cy="${y}" r="3" fill="var(--glow)" opacity=".5" filter="url(#softglow)"/><circle cx="${x}" cy="${y}" r=".8" fill="var(--glow)"/><circle cx="${x}" cy="${y}" r=".8" fill="none" stroke="var(--ink)" stroke-width=".15" opacity=".5"/></g>`).join("")}
+    </svg>`;
+  }
+
+  function bestText(G) {
+    const b = G.bestLabel();
+    if (!b) return "";
+    if (G.bestIsLevel) return `${b}<small>${t(TX.level).toUpperCase()}</small>`;
+    if (G.bestLow) return `${b}<small>${t(TX.moves).toUpperCase()}</small>`;
+    return `${b}<small>${t(TX.best).toUpperCase()}</small>`;
+  }
+
+  function showHub() {
+    stopCur();
+    const mgIcon = `<svg viewBox="0 0 40 40"><g filter="url(#brushG)"><circle cx="20" cy="20" r="17" class="w"/>${phase(26, 13, 6, .74)}<path class="s" d="M16 36V24Q16 18 11 14M16 26Q19 21 24 20M13 16Q10 12.5 7 13" style="stroke-width:1.4"/><path class="k" d="M4 36Q20 33 36 36V38H4Z"/></g>${blossom(10, 13.5, 3.2, false)}${blossom(24, 20, 3, false)}</svg>`;
+    app.innerHTML = `
+      <div class="bar">
+        <button class="lang-btn" id="langBtn">${UI.globe}<span>${lang.toUpperCase()}</span></button>
+        <div class="room"></div>
+        ${soundBtn()}
+      </div>
+      <div class="hub">
+        ${heroSVG()}
+        <h1>${t(TX.title)}</h1>
+        <p class="sub">${t(TX.sub)}</p>
+        <div class="games">
+          ${GAMES.map((G, i) => `<button class="gcard" data-g="${i}" style="animation-delay:${.15 + i * .07}s">
+            <span class="ic">${G.icon()}</span>
+            <span class="tx"><span class="nm">${t(G.name)}</span><span class="ds">${t(G.desc)}</span></span>
+            <span class="bs">${bestText(G)}</span>
+          </button>`).join("")}
+          <a class="gcard ext" href="index.html" style="animation-delay:${.15 + GAMES.length * .07}s">
+            <span class="ic">${mgIcon}</span>
+            <span class="tx"><span class="nm">${t(["Mondgarten", "Moon Garden", "Ay Bahçesi"])}</span><span class="ds">${t(TX.moreGame)}</span></span>
+            <span class="bs">→</span>
+          </a>
+        </div>
+      </div>`;
+    app.querySelectorAll("[data-g]").forEach((b) => b.onclick = () => { Snd.start(); Snd.tap(); openGame(GAMES[+b.dataset.g]); });
+    document.getElementById("langBtn").onclick = () => {
+      Snd.tap();
+      lang = LANGS[(LANGS.indexOf(lang) + 1) % LANGS.length];
+      store.set("kw.lang", lang); document.documentElement.lang = lang;
+      showHub();
+    };
+    wireSound();
+  }
+
+  showHub();
+})();
+</script>
+</body>
+</html>

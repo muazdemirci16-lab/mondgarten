@@ -1564,6 +1564,7 @@ svg .rod-lit { animation: rodGlow 1.6s ease both; }
         <div class="btns">
           <button class="btn fill" id="startBtn"><span>${t(TX.startBtn)}</span></button>
           <button class="btn" id="setBtn"><span>${t(TX.settings)}</span></button>
+          <a class="btn" href="spiele.html" style="text-decoration:none;color:inherit"><span>${t(["Mehr Spiele", "More games", "Daha fazla oyun"])}</span></a>
         </div>
       </div>`;
     document.getElementById("startBtn").onclick = () => { Snd.start(); Snd.tap(); showTree(-1); };
