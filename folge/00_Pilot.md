@@ -1,6 +1,8 @@
-# KALLE & CO. – Folge 1: „DAS AMT DER VERDAMMNIS“
+# KALLE & CO. – PILOT
 
 *Ein chaotischer Animations-Sketch im Stil von Meme-Machinima-Serien – mit komplett eigenen Figuren.*
+
+**Zum Anschauen:** `pilot-player.html` im Browser öffnen.
 **Laufzeit:** ca. 12–14 Minuten · **Ton:** laut, absurd, schnell geschnitten, mit plötzlichen Herz-Momenten
 
 ---

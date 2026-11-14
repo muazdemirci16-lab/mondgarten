@@ -1,0 +1,385 @@
+<title>Kalle & Co. Pilot</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bangers&family=Nunito:wght@500;700;900&display=swap">
+<style>
+/* Layout: ein Fernseh-Bildschirm (16:9 Bühne) mit Untertitel-Leiste, darunter Fernbedienung und Kapitelliste */
+:root{
+  --bg:#17141f; --panel:#221e2d; --line:#3a3349; --fg:#f3eefb; --muted:#a79fb8;
+  --accent:#ffb02e; --ink:#8b4dff; --sub:rgba(10,8,16,.82);
+  --display:'Bangers','Impact','Arial Black',sans-serif;
+  --body:'Nunito',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:dark;
+}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+.wrap{max-width:980px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(30px,6vw,46px);letter-spacing:.04em;margin:0;line-height:1;color:var(--accent);text-shadow:3px 3px 0 var(--ink)}
+h1 small{display:block;font-size:.45em;color:var(--fg);text-shadow:none;letter-spacing:.12em;margin-top:6px}
+.hint{color:var(--muted);font-size:13px}
+
+.tv{position:relative;width:100%;aspect-ratio:16/9;max-width:100%;border-radius:18px;overflow:hidden;background:#000;
+  box-shadow:0 0 0 6px #2c2638,0 0 0 8px #0b0910,0 18px 50px rgba(0,0,0,.55)}
+.stage{position:absolute;inset:0;overflow:hidden;transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+.bg{position:absolute;inset:0;transition:opacity .6s}
+.bg svg{width:100%;height:100%;display:block}
+.cast{position:absolute;left:0;right:0;bottom:15%;height:52%;display:flex;justify-content:center;align-items:flex-end;gap:1.5%}
+.ch{height:100%;aspect-ratio:120/170;transition:transform .35s,filter .35s,opacity .35s;filter:brightness(.62) saturate(.8);transform:translateY(4%) scale(.9);transform-origin:bottom center}
+.ch svg{width:100%;height:100%;overflow:visible}
+.ch.talk{filter:none;transform:none;animation:bob .38s ease-in-out infinite alternate}
+.ch.big{height:128%}
+@keyframes bob{to{transform:translateY(-4%) rotate(-1.5deg)}}
+.enter{animation:pop .4s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{from{transform:scale(0) translateY(40%)}}
+
+.subs{position:absolute;left:3%;right:3%;bottom:3%;background:var(--sub);border-radius:12px;padding:1.4% 2.2%;min-height:18%;
+  display:flex;flex-direction:column;justify-content:center;gap:2px;border:2px solid rgba(255,255,255,.08)}
+.who{font-family:var(--display);letter-spacing:.06em;font-size:clamp(14px,2.4vw,22px);line-height:1}
+.par{color:var(--muted);font-style:italic;font-size:.75em;font-family:var(--body);letter-spacing:0}
+.txt{font-size:clamp(13px,2.2vw,21px);font-weight:700;line-height:1.3}
+.subs.dir .txt{font-weight:500;font-style:italic;color:#d9d1ea}
+.subs.dir .who{color:var(--muted)!important;font-size:clamp(11px,1.6vw,14px)}
+
+.card{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:6%;
+  font-family:var(--display);letter-spacing:.05em;color:#fff;background:radial-gradient(circle,#3a1e6e 0,#0d0718 75%);opacity:0;pointer-events:none;transition:opacity .35s}
+.card.on{opacity:1}
+.card span{font-size:clamp(26px,6vw,64px);line-height:1.05;text-wrap:balance;text-shadow:4px 4px 0 var(--ink)}
+.card.freeze{background:rgba(0,0,0,.55)}
+.card.freeze span{background:#fff;color:#111;padding:.15em .5em;text-shadow:none;transform:rotate(-3deg);font-size:clamp(24px,5vw,54px)}
+.sfx{position:absolute;top:16%;left:50%;transform:translateX(-50%) rotate(-8deg) scale(0);font-family:var(--display);
+  font-size:clamp(34px,9vw,96px);color:#ffe14d;-webkit-text-stroke:3px #c2185b;text-shadow:6px 6px 0 #000;pointer-events:none;white-space:nowrap}
+.sfx.on{animation:boom 1.4s ease-out forwards}
+@keyframes boom{0%{transform:translateX(-50%) rotate(-8deg) scale(0)}15%{transform:translateX(-50%) rotate(-8deg) scale(1.25)}25%,80%{transform:translateX(-50%) rotate(-8deg) scale(1)}100%{transform:translateX(-50%) rotate(-8deg) scale(1);opacity:0}}
+.flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+.flash.on{animation:fl .9s ease-out}
+@keyframes fl{0%{opacity:1}100%{opacity:0}}
+.shake{animation:shk .45s}
+@keyframes shk{20%{transform:translate(-2%,1%)}40%{transform:translate(2%,-1%)}60%{transform:translate(-1.5%,-1%)}80%{transform:translate(1%,1%)}}
+.zoom{transform:scale(1.35)}
+.glitch .ch.boss{animation:gl .15s steps(2) infinite}
+@keyframes gl{50%{transform:translateX(3%) skewX(8deg);filter:hue-rotate(90deg)}}
+.start{position:absolute;inset:0;display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 50% 40%,#3a1e6e,#0d0718 80%);z-index:5;text-align:center;padding:4%}
+.start[hidden]{display:none}
+.start .logo{font-family:var(--display);font-size:clamp(40px,10vw,110px);color:var(--accent);text-shadow:5px 5px 0 var(--ink);line-height:.9;letter-spacing:.03em}
+.start .ep{font-family:var(--display);letter-spacing:.3em;font-size:clamp(14px,2.6vw,26px)}
+.big-play{font-family:var(--display);font-size:clamp(18px,3vw,28px);letter-spacing:.08em;background:var(--accent);color:#1a1020;border:0;border-radius:999px;padding:.45em 1.4em;cursor:pointer;box-shadow:0 5px 0 #b06d00}
+.big-play:active{transform:translateY(3px);box-shadow:0 2px 0 #b06d00}
+
+.remote{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px}
+.btn{font:inherit;font-weight:900;background:#2f2940;color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:8px 14px;cursor:pointer;min-width:44px}
+.btn:hover{background:#3b3350}
+.btn:focus-visible,.chap:focus-visible,select:focus-visible,.big-play:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.btn.main{background:var(--accent);color:#1a1020;border-color:transparent;min-width:110px}
+.prog{flex:1 1 200px;height:8px;background:#0e0b14;border-radius:99px;overflow:hidden;cursor:pointer;min-width:0}
+.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ink),var(--accent));transition:width .3s}
+.opt{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:14px}
+select{font:inherit;background:#2f2940;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:6px}
+.count{font-variant-numeric:tabular-nums;color:var(--muted);font-size:13px}
+
+.chaps{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px}
+.chap{font:inherit;text-align:left;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:2px;min-width:0}
+.chap b{font-family:var(--display);font-weight:400;letter-spacing:.05em;font-size:17px;color:var(--accent)}
+.chap span{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.chap.cur{border-color:var(--accent);background:#2d2540}
+h2{font-family:var(--display);font-weight:400;letter-spacing:.06em;font-size:22px;margin:8px 0 0}
+.castlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.cc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
+.cc .pic{width:70px;height:96px}
+.cc b{font-family:var(--display);font-weight:400;letter-spacing:.05em;font-size:17px}
+.cc span{font-size:12px;color:var(--muted)}
+@media (max-width:560px){.cast{bottom:30%;height:42%}.subs{min-height:26%}}
+@media (prefers-reduced-motion:reduce){.ch.talk,.glitch .ch.boss{animation:none}.shake,.sfx.on,.enter{animation:none}.sfx.on{transform:translateX(-50%) rotate(-8deg) scale(1)}.stage{transition:none}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>KALLE &amp; CO.<small>FOLGE 0 · PILOT</small></h1>
+    <div class="hint">Leertaste = Play/Pause · Pfeiltasten = vor/zurück</div>
+  </header>
+
+  <div class="tv" id="tv">
+    <div class="stage" id="stage">
+      <div class="bg" id="bg"></div>
+      <div class="cast" id="cast"></div>
+      <div class="sfx" id="sfx"></div>
+      <div class="flash" id="flash"></div>
+    </div>
+    <div class="subs" id="subs"><div class="who" id="who"></div><div class="txt" id="txt"></div></div>
+    <div class="card" id="card"><span id="cardtxt"></span></div>
+    <div class="start" id="start">
+      <div class="logo">KALLE &amp; CO.</div>
+      <div class="ep">PILOT</div>
+      <button class="big-play" id="bigplay">▶ FOLGE ABSPIELEN</button>
+      <div class="hint">Mit „Vorlesen“ sprechen die Figuren mit Computerstimmen.</div>
+    </div>
+  </div>
+
+  <div class="remote">
+    <button class="btn" id="prev" aria-label="Zurück">⏮</button>
+    <button class="btn main" id="play">▶ Play</button>
+    <button class="btn" id="next" aria-label="Weiter">⏭</button>
+    <div class="prog" id="prog" title="Zum Springen klicken"><i id="bar"></i></div>
+    <span class="count" id="count">0 / 0</span>
+    <label class="opt"><input type="checkbox" id="voice"> Vorlesen</label>
+    <label class="opt">Tempo
+      <select id="speed"><option value="0.75">langsam</option><option value="1" selected>normal</option><option value="1.4">schnell</option></select>
+    </label>
+  </div>
+
+  <h2>KAPITEL</h2>
+  <div class="chaps" id="chaps"></div>
+
+  <h2>DIE FIGUREN</h2>
+  <div class="castlist" id="castlist"></div>
+</div>
+
+<script>
+const SCRIPT = [{"t": "scene", "text": "COLD OPEN – „Das Mikrowellen-Problem“"}, {"t": "card", "text": "INNEN. KALLES WURSTPALAST – MORGEN"}, {"t": "dir", "text": "Kalle steht vor einem Toaster. Er hält eine Currywurst in der Hand. Tiefe Konzentration. Epische Musik schwillt an."}, {"t": "line", "who": "KALLE", "par": null, "text": "Heute … schaffe isch's."}, {"t": "dir", "text": "Er steckt die Currywurst in den Toaster. Sie passt nicht. Er drückt. Sie passt nicht. Er nimmt Anlauf und rammt sie mit dem Kopf hinein."}, {"t": "sfx", "text": "SQUISH."}, {"t": "dir", "text": "Pause. Der Toaster raucht. Der Toaster explodiert. Kalle steht verkohlt da, die Koteletten brennen leicht."}, {"t": "line", "who": "KALLE", "par": "gelassen", "text": "… Knusprig."}, {"t": "dir", "text": "Mira kommt mit einem Kaffee herein, sieht das Chaos, dreht um und geht wieder raus."}, {"t": "line", "who": "MIRA (O.S.)", "par": null, "text": "Ich hasse es hier."}, {"t": "card", "text": "CUT – INTRO"}, {"t": "dir", "text": "Kurzer, lauter Titeljingle: Gitarrenriff, das Logo „KALLE & CO.“ fliegt durchs Bild, Gerd fliegt dagegen, das Logo zerbricht. Frosti weint Eiswürfel auf die Trümmer. Klaus winkt fröhlich. Schwarzbild."}, {"t": "scene", "text": "AKT 1 – „Der Brief“"}, {"t": "card", "text": "AUSSEN. KALLES WURSTPALAST – TAG"}, {"t": "dir", "text": "Die Imbissbude: ein umgebautes Dixi-Klo auf Rädern. Ein Schild: „KALLES WURSTPALAST – Jetzt mit 30 % weniger Gesundheitsamt-Beschwerden!“"}, {"t": "dir", "text": "Kalle steht hinter der Theke. Gerd sitzt auf der Kasse und telefoniert über sein Headset."}, {"t": "line", "who": "GERD", "par": null, "text": "Ja … ja … Nein, Brenda, ich sag's dir: Currywurst als Abo-Modell. Wurst-as-a-Service. Das ist die Zukunft. *Gurr.* … Hallo? Brenda?"}, {"t": "dir", "text": "Er wurde weggedrückt."}, {"t": "line", "who": "GERD", "par": "in die Kamera", "text": "Sie ist nicht bereit für Innovation."}, {"t": "dir", "text": "Ein Briefträger fährt auf einem Fahrrad vorbei, wirft einen Brief. Der Brief fliegt in Zeitlupe … und klatscht Kalle mitten ins Gesicht."}, {"t": "sfx", "text": "Dramatischer Vine-Boom-artiger Bass-Schlag."}, {"t": "dir", "text": "Der Briefumschlag ist violett und leuchtet unheimlich. Absender: „DAS AMT – Abteilung für Abteilungen“."}, {"t": "line", "who": "KALLE", "par": null, "text": "Oh, Post! Isch krieg nie Post! Vielleicht isses 'ne Currywurst!"}, {"t": "dir", "text": "Er beißt in den Brief. Kaut. Schluckt."}, {"t": "line", "who": "MIRA", "par": "kommt angerannt", "text": "KALLE! Den muss man LESEN, nicht ESSEN!"}, {"t": "line", "who": "KALLE", "par": "würgt den Brief wieder hoch, er ist vollkommen intakt und trocken", "text": "Ach so."}, {"t": "dir", "text": "Mira nimmt den Brief mit zwei Fingern und liest vor."}, {"t": "line", "who": "MIRA", "par": null, "text": "*„Sehr geehrter Herr Knackwurst. Ihre Imbiss-Genehmigung ist seit 1987 abgelaufen.“*"}, {"t": "line", "who": "KALLE", "par": null, "text": "Isch bin seit 1987 abgelaufen?!"}, {"t": "line", "who": "MIRA", "par": null, "text": "Deine GENEHMIGUNG. *„Sollten Sie bis heute, 23:59 Uhr, keine Verlängerung beantragen, wird Ihr Imbiss … ENTWURSTET.“*"}, {"t": "dir", "text": "Stille. ZOOM auf Kalles Gesicht. ZOOM auf seine Augen. ZOOM in seine Pupille, in der sich eine kleine, weinende Currywurst spiegelt."}, {"t": "line", "who": "KALLE", "par": "flüsternd", "text": "… Ent…wurstet?"}, {"t": "dir", "text": "Hinter ihm springt Frostis Tür auf, das Licht flackert traurig."}, {"t": "line", "who": "FROSTI", "par": null, "text": "*bzzzt* … Ich fühle … KÄLTE."}, {"t": "line", "who": "KALLE", "par": "schreit in den Himmel, die Kamera fährt in die Vogelperspektive hoch, bis man den ganzen Planeten sieht", "text": "NEEEEEEIIIIIIN!"}, {"t": "dir", "text": "Ein Satellit im Orbit wackelt kurz."}, {"t": "card", "text": "CUT."}, {"t": "dir", "text": "Klaus rollt in seinem Topf heran."}, {"t": "line", "who": "KLAUS", "par": null, "text": "Kalle ist traurig. Kalle braucht … Umarmung?"}, {"t": "dir", "text": "Kalle umarmt Klaus. Zwei Sekunden Stille."}, {"t": "line", "who": "KALLE", "par": "Gesicht voller Stacheln, lächelt tapfer", "text": "… Danke, Klaus."}, {"t": "line", "who": "KALLE", "par": "eine Sekunde später, ohrenbetäubend", "text": "AAAAAAAAAAAAAH!"}, {"t": "line", "who": "MIRA", "par": null, "text": "Okay. Leute. Wir gehen zum Amt. Wir füllen EIN Formular aus. Wir sind in zwanzig Minuten wieder hier. Was soll schon schiefgehen?"}, {"t": "dir", "text": "Freeze Frame. Ein Untertitel erscheint:"}, {"t": "card", "text": "ES GING ALLES SCHIEF."}, {"t": "scene", "text": "AKT 2 – „Ziehen Sie eine Nummer“"}, {"t": "card", "text": "INNEN. DAS AMT – EINGANGSHALLE"}, {"t": "dir", "text": "Ein riesiger, endloser Flur aus grauem Linoleum. Neonröhren flackern. In der Ferne tickt eine Uhr extrem laut. Die Wände sind Aktenschränke, die bis in den Himmel reichen. Irgendwo hustet jemand. Fahrstuhlmusik."}, {"t": "dir", "text": "Die Gruppe steht am Eingang. Vor ihnen: ein Nummernautomat."}, {"t": "line", "who": "MIRA", "par": null, "text": "Okay. Nummer ziehen."}, {"t": "dir", "text": "Kalle zieht. Ein Zettel kommt raus. Und noch einer. Und noch einer. Der Zettel ist ENDLOS lang, er rollt durch den ganzen Flur bis zum Horizont."}, {"t": "line", "who": "KALLE", "par": "liest ab", "text": "Nummer … neun Millionen neunhundertneunundneunzigtausend …"}, {"t": "dir", "text": "CUT – ZEITSPRUNG-KARTE: „3 STUNDEN SPÄTER“"}, {"t": "line", "who": "KALLE", "par": null, "text": "… neunhundertneunundneunzig … Komma fünf."}, {"t": "dir", "text": "Über der Tür leuchtet eine Anzeige: „AKTUELLE NUMMER: 4“."}, {"t": "dir", "text": "Alle starren die Anzeige an. Die Anzeige springt auf „3“."}, {"t": "line", "who": "MIRA", "par": null, "text": "Die zählt RÜCKWÄRTS?!"}, {"t": "line", "who": "GERD", "par": null, "text": "Okay, Team, hört zu. Diese Warteschlange ist ein ineffizienter Legacy-Prozess. Ich werde sie … *(setzt die Sonnenbrille ab)* … disruptieren."}, {"t": "dir", "text": "Gerd fliegt nach vorne. Ganz vorn in der Schlange sitzt ein uraltes Skelett mit einer Wartenummer in der knöchernen Hand. Spinnweben."}, {"t": "line", "who": "GERD", "par": null, "text": "Hey, Bro. Sie sehen aus wie jemand, der an einer exklusiven Investment-Opportunity interessiert ist."}, {"t": "dir", "text": "Das Skelett zerfällt zu Staub."}, {"t": "line", "who": "GERD", "par": "sammelt die Wartenummer ein", "text": "… Ich nehme das als Ja."}, {"t": "line", "who": "MIRA", "par": null, "text": "GERD! Das war ein MENSCH!"}, {"t": "line", "who": "GERD", "par": null, "text": "Das war ein *Lead*."}, {"t": "dir", "text": "Plötzlich: ein tiefes, metallisches DING-DONG. Alle Lichter gehen aus. Ein einzelner Scheinwerfer erleuchtet eine Treppe, die vorher nicht da war. Die Fahrstuhlmusik verlangsamt sich, wird tiefer und verzerrter, bis sie zur Kirchenorgel wird."}, {"t": "dir", "text": "Schritte. Jeder Schritt: KLONK. Auf jeder Stufe erscheint ein violetter Abdruck: „ABGELEHNT“."}, {"t": "dir", "text": "Aus dem Dunkel tritt: DER STEMPELMEISTER. Neben ihm hüpft Lochi."}, {"t": "line", "who": "STEMPELMEISTER", "par": "langsam, genießerisch", "text": "Willkommen … im AMT."}, {"t": "line", "who": "LOCHI", "par": null, "text": "*Klack.*"}, {"t": "line", "who": "KALLE", "par": null, "text": "Ey, bisse der Chef hier? Isch brauch nur 'n Stempel für meine Wurstbude, dann bin isch weg."}, {"t": "dir", "text": "Der Stempelmeister ist sofort ganz nah an Kalles Gesicht (ohne sich bewegt zu haben). Das Monokel blitzt."}, {"t": "line", "who": "STEMPELMEISTER", "par": "flüsternd", "text": "Haben Sie … einen … TERMIN?"}, {"t": "line", "who": "KALLE", "par": null, "text": "… Isch hab 'ne Wurst."}, {"t": "dir", "text": "Er hält eine Currywurst hoch. Wo kam die her? Niemand weiß es."}, {"t": "line", "who": "STEMPELMEISTER", "par": "kreischt", "text": "LEBENSMITTEL SIND IN DEN AMTSRÄUMEN NICHT GESTATTET!"}, {"t": "dir", "text": "Er stampft – BOOOM – die Wurst wird mit „ABGELEHNT“ gestempelt und zerfällt zu Asche."}, {"t": "line", "who": "KALLE", "par": "sinkt in Zeitlupe auf die Knie, traurige Geige", "text": "Gerhard … neeein …"}, {"t": "line", "who": "MIRA", "par": null, "text": "Du hast deiner Wurst einen NAMEN gegeben?"}, {"t": "line", "who": "KALLE", "par": null, "text": "Sie hatte einen Namen, bevor isch sie kannte."}, {"t": "line", "who": "STEMPELMEISTER", "par": null, "text": "Sie wünschen eine Verlängerung Ihrer Genehmigung? *(lacht leise, dann immer lauter, bis die Aktenschränke vibrieren)* Sehr gut. SEHR GUT. Dann müssen Sie … das SPIEL spielen."}, {"t": "dir", "text": "Konfetti-Kanonen explodieren. Die Halle verwandelt sich in ein Gameshow-Studio. Ein Publikum aus gesichtslosen Sachbearbeitern klatscht im Takt. Ein Neonschild: „WER WIRD GENEHMIGT?“"}, {"t": "line", "who": "STEMPELMEISTER", "par": null, "text": "Drei Prüfungen. Bestehen Sie alle … erhalten Sie Ihren Stempel. Scheitern Sie … *(Pause)* … werden Sie ARCHIVIERT."}, {"t": "dir", "text": "Er zeigt auf eine Wand. Hunderte Leute stecken in Aktenordnern, nur ihre Köpfe gucken raus. Einer winkt schwach."}, {"t": "line", "who": "ARCHIVIERTER TYP", "par": null, "text": "Ich wollte nur … meinen Wohnsitz ummelden …"}, {"t": "line", "who": "MIRA", "par": "zur Kamera", "text": "Ich hasse es hier."}, {"t": "scene", "text": "AKT 3 – „Die drei Prüfungen“"}, {"t": "scene", "text": "PRÜFUNG 1: „DAS FORMULAR“"}, {"t": "dir", "text": "Ein Pult fährt aus dem Boden. Darauf: ein einzelnes Blatt Papier."}, {"t": "line", "who": "STEMPELMEISTER", "par": null, "text": "Füllen Sie Formular Q-17 (blau) aus."}, {"t": "line", "who": "MIRA", "par": null, "text": "Okay, das ist machbar. *(liest)* „Formular Q-17 (blau) kann nur in Verbindung mit Formular Q-17 (rot) eingereicht werden.“ Okay, wo ist Q-17 rot?"}, {"t": "dir", "text": "Ein zweites Blatt fällt von der Decke."}, {"t": "line", "who": "MIRA", "par": "liest", "text": "„Formular Q-17 (rot) kann nur eingereicht werden, wenn Formular Q-17 (blau) bereits genehmigt wurde.“"}, {"t": "dir", "text": "Stille."}, {"t": "line", "who": "MIRA", "par": null, "text": "…"}, {"t": "line", "who": "MIRA", "par": null, "text": "… Das ist ein Zirkelschluss."}, {"t": "line", "who": "STEMPELMEISTER", "par": null, "text": "Das ist ein *Verwaltungsvorgang*."}, {"t": "dir", "text": "Miras Auge zuckt. Ihr Notizblock „Kündigen wollen heute:“ springt von 3 auf 11."}, {"t": "line", "who": "KALLE", "par": null, "text": "Lass misch mal, isch hab da 'ne Idee."}, {"t": "dir", "text": "Kalle nimmt beide Formulare. Faltet sie. Faltet weiter. Faltet. Faltet. Musik: dramatischer Origami-Montage-Song. Er hält das Ergebnis hoch: eine perfekte, wunderschöne Papier-Currywurst."}, {"t": "line", "who": "KALLE", "par": null, "text": "Fertisch."}, {"t": "dir", "text": "Lange Pause. Der Stempelmeister beugt sich vor. Untersucht es mit dem Monokel. Die Musik stoppt."}, {"t": "line", "who": "STEMPELMEISTER", "par": null, "text": "… Das ist … *(Stimme zittert)* … das ist … die schönste Ablage, die ich je gesehen habe."}, {"t": "dir", "text": "Eine einzige violette Tinten-Träne läuft unter seinem Monokel hervor."}, {"t": "line", "who": "STEMPELMEISTER", "par": "fängt sich sofort, brüllt", "text": "ANGENOMMEN! NÄCHSTE PRÜFUNG!"}, {"t": "line", "who": "MIRA", "par": null, "text": "WAS?! Das hat GAR KEINEN SINN ergeben!"}, {"t": "line", "who": "GERD", "par": null, "text": "Willkommen im Business, Baby."}, {"t": "scene", "text": "PRÜFUNG 2: „DIE UNTERSCHRIFT“"}, {"t": "dir", "text": "Ein riesiger Bildschirm fährt herunter. Darauf: eine leere Unterschriftenzeile, 30 Meter lang."}, {"t": "line", "who": "STEMPELMEISTER", "par": null, "text": "Unterschreiben Sie. Mit Ihrem VOLLSTÄNDIGEN, AMTLICHEN Namen. In SCHÖNSCHRIFT. Mit … *(holt etwas hervor)* … DIESEM Stift."}, {"t": "dir", "text": "Er hält einen Füller hoch. Der Füller ist so groß wie ein Baumstamm."}, {"t": "line", "who": "KALLE", "par": null, "text": "Kein Problem!"}, {"t": "dir", "text": "Kalle stemmt den Füller hoch, wankt, rennt im Kreis, zieht eine riesige Spur quer über den Bildschirm, über die Wand, über das Publikum, über Lochi."}, {"t": "line", "who": "LOCHI", "par": "fassungslos", "text": "… *Klack.*"}, {"t": "dir", "text": "Das Ergebnis: eine gigantische Zeichnung einer Currywurst mit Pommes. Daneben, winzig: „kale“."}, {"t": "line", "who": "STEMPELMEISTER", "par": null, "text": "DAS. IST. KEIN. NAME."}, {"t": "line", "who": "KALLE", "par": null, "text": "Doch, das is mein Künstlername."}, {"t": "line", "who": "STEMPELMEISTER", "par": "holt aus", "text": "AB-GE-…"}, {"t": "dir", "text": "Plötzlich schiebt sich Frosti dazwischen. Seine Tür öffnet sich. Im Licht steht ein einzelner, abgelaufener Erdbeerjoghurt."}, {"t": "line", "who": "FROSTI", "par": null, "text": "*bzzzt* … Bitte. Er … gibt sich Mühe. *(Pixelaugen werden riesig und feucht)* Haben Sie … jemals … KÄLTE gefühlt?"}, {"t": "dir", "text": "Der Stempelmeister erstarrt. Flashback-Effekt: Sepia-Filter, Spieluhr-Musik. Wir sehen einen kleinen, süßen Baby-Stempel, der alleine in einer leeren Schreibtischschublade sitzt. Niemand benutzt ihn. Er stempelt traurig einen kleinen Abdruck: „bitte hab mich lieb“."}, {"t": "dir", "text": "CUT zurück. Der Stempelmeister räuspert sich."}, {"t": "line", "who": "STEMPELMEISTER", "par": null, "text": "… Ich habe … etwas im Auge."}, {"t": "line", "who": "GERD", "par": "flüstert zu Mira", "text": "Er hat ein Monokel. Er hat buchstäblich nur EIN Auge, wo was reinkann."}, {"t": "line", "who": "STEMPELMEISTER", "par": null, "text": "ANGENOMMEN! *(schnieft)* Aus … formalen Gründen."}, {"t": "scene", "text": "PRÜFUNG 3: „DIE ZUSTÄNDIGKEIT“"}, {"t": "dir", "text": "Das Studio wird dunkel. Bedrohliche Trommeln. Ein Labyrinth aus Türen erscheint – tausende Türen, alle beschriftet: „Zimmer 1A“, „Zimmer 1A (neu)“, „Zimmer 1A (wirklich neu)“, „NICHT Zimmer 1A“."}, {"t": "line", "who": "STEMPELMEISTER", "par": null, "text": "Finden Sie … den ZUSTÄNDIGEN SACHBEARBEITER. Sie haben … *(eine riesige Sanduhr kracht auf den Boden)* … bis 23:59 Uhr!"}, {"t": "dir", "text": "Uhr-Einblendung: **23:41"}, {"t": "line", "who": "MIRA", "par": null, "text": "Okay, wir teilen uns auf!"}, {"t": "dir", "text": "SPLIT SCREEN – vier Bildschirme gleichzeitig:"}, {"t": "dir", "text": "— Kalle öffnet eine Tür. Dahinter: eine Tür. Dahinter: eine Tür. Dahinter: eine Currywurst. Er isst sie. Dahinter: eine Tür."}, {"t": "dir", "text": "— Gerd öffnet eine Tür und findet einen Konferenzraum voller Tauben in Anzügen. Sie drehen sich alle gleichzeitig um."}, {"t": "line", "who": "GERD", "par": null, "text": "… Ich bin zuhause."}, {"t": "dir", "text": "Er setzt sich hin. Er kommt nicht wieder."}, {"t": "dir", "text": "— Frosti öffnet eine Tür. Dahinter: eine Kühlschrank-Dating-Show. Eine elegante Gefriertruhe zwinkert ihm zu. Frostis Display zeigt zwei Herzen."}, {"t": "dir", "text": "— Mira öffnet eine Tür. Dahinter: ein Sachbearbeiter."}, {"t": "line", "who": "SACHBEARBEITER", "par": null, "text": "Dafür bin ich nicht zuständig. Gehen Sie zu Zimmer 1A."}, {"t": "dir", "text": "Mira öffnet die nächste Tür. Derselbe Sachbearbeiter."}, {"t": "line", "who": "SACHBEARBEITER", "par": null, "text": "Dafür bin ich nicht zuständig. Gehen Sie zu Zimmer 1A."}, {"t": "dir", "text": "Nächste Tür. Derselbe Sachbearbeiter, jetzt mit Schnurrbart."}, {"t": "line", "who": "SACHBEARBEITER", "par": null, "text": "Ich bin ein anderer Sachbearbeiter. Gehen Sie zu Zimmer 1A."}, {"t": "dir", "text": "Uhr-Einblendung: **23:54"}, {"t": "dir", "text": "Mira sinkt an einer Wand zusammen. Klaus rollt neben sie."}, {"t": "line", "who": "KLAUS", "par": null, "text": "Mira traurig. Mira braucht … Umarmung?"}, {"t": "line", "who": "MIRA", "par": null, "text": "Klaus, das ist echt lieb, aber du bist ein Kaktus."}, {"t": "line", "who": "KLAUS", "par": "Kulleraugen, Blüte senkt sich", "text": "… Ich weiß."}, {"t": "dir", "text": "Mira schaut ihn an. Atmet aus. Und dann … sieht sie etwas. ZOOM auf ein winziges Schild an der Wand, unter tausend Schichten Staub:"}, {"t": "card", "text": "„Hausordnung des AMTES, § 1: Jeder Antrag, der korrekt ausgefüllt ist, MUSS genehmigt werden.“"}, {"t": "dir", "text": "Miras Augen weiten sich. Musik: Ein einzelner, epischer Chorton."}, {"t": "line", "who": "MIRA", "par": null, "text": "… Oh. Oh, ich hab's."}, {"t": "dir", "text": "Sie zieht den Schraubenschlüssel aus ihrer Haare (wie war der da drin?), schraubt einen Aktenschrank auf, holt ein leeres Formular heraus und beginnt in Rekordgeschwindigkeit zu schreiben. Hacker-Musik. Matrix-artige Grüne Buchstaben fliegen über den Bildschirm, obwohl sie mit Kugelschreiber schreibt."}, {"t": "scene", "text": "AKT 4 – „Der Endgegner“"}, {"t": "card", "text": "INNEN. DAS AMT – DER THRONSAAL"}, {"t": "dir", "text": "Ein gewaltiger Saal. Ein Thron aus gestapelten Leitz-Ordnern … nein, aus generischen grauen Ordnern. Der Stempelmeister thront darauf. Die Uhr an der Wand: 23:57."}, {"t": "dir", "text": "Die Tür fliegt auf. Kalle (mit Currywurst-Soße am ganzen Körper), Frosti (mit Lippenstiftabdruck auf der Tür), Klaus und Mira treten ein. Gerd fehlt."}, {"t": "line", "who": "STEMPELMEISTER", "par": null, "text": "Sie … haben ZURÜCKGEFUNDEN? Unmöglich! Nicht einmal *ich* finde hier zurück! Ich wohne seit 1974 in diesem Raum!"}, {"t": "line", "who": "MIRA", "par": "hält ein Formular hoch", "text": "Wir haben einen Antrag."}, {"t": "line", "who": "STEMPELMEISTER", "par": "spöttisch", "text": "Ach ja? Was für einen Antrag?"}, {"t": "line", "who": "MIRA", "par": "knallt es auf den Tisch", "text": "Formular 0-0. „Antrag auf Abschaffung des Amtes.“ Vollständig ausgefüllt. In dreifacher Ausführung. Mit Durchschlag. Und gemäß Paragraf 1 Ihrer eigenen Hausordnung … müssen Sie ihn genehmigen."}, {"t": "dir", "text": "Stille. Ein einzelnes Blatt Papier fällt langsam zu Boden. Lochi lässt seinen Mund aufklappen."}, {"t": "line", "who": "LOCHI", "par": null, "text": "… *Klack?!*"}, {"t": "line", "who": "STEMPELMEISTER", "par": "zittert", "text": "N-nein … Das … das ist ein Widerspruch … Wenn ich ihn genehmige, gibt es das Amt nicht mehr … aber wenn ich ihn ablehne, verstoße ich gegen die Hausordnung … und die Hausordnung … IST … DAS … AMT …"}, {"t": "dir", "text": "Sein Körper beginnt zu flackern wie ein kaputtes Videospiel. Glitch-Effekte. Seine Stimme wird verzerrt und pitcht hoch und runter."}, {"t": "line", "who": "STEMPELMEISTER", "par": null, "text": "GE-GE-GENEH-ABGE-GENEH-ABGELEH-GENEHHHH—"}, {"t": "line", "who": "KALLE", "par": null, "text": "Mira, was passiert mit dem?"}, {"t": "line", "who": "MIRA", "par": null, "text": "Bürokratie. Sie frisst sich selbst."}, {"t": "dir", "text": "Uhr: **23:58"}, {"t": "line", "who": "STEMPELMEISTER", "par": "brüllt, wächst auf das Fünffache, die Decke kracht weg", "text": "WENN ICH UNTERGEHE … DANN NEHME ICH EUCH MIIIIIT!"}, {"t": "dir", "text": "BOSSKAMPF-MUSIK. Heavy-Metal-Gitarren. Ein Lebensbalken erscheint oben im Bild: „DER STEMPELMEISTER – Oberamtsrat der Finsternis“."}, {"t": "dir", "text": "Der Stempelmeister stampft. Überall regnet es „ABGELEHNT“-Stempel. Frosti weicht aus. Klaus wird getroffen und ist jetzt „ABGELEHNT“ gestempelt."}, {"t": "line", "who": "KLAUS", "par": "liest seinen eigenen Bauch", "text": "… Das tut mehr weh als Stacheln."}, {"t": "line", "who": "MIRA", "par": null, "text": "Kalle! Wir brauchen nur EINEN Stempel auf dem Antrag! Du musst ihn dazu bringen, auf das Papier zu stampfen!"}, {"t": "line", "who": "KALLE", "par": null, "text": "Wie soll isch das machen?!"}, {"t": "dir", "text": "Mira schaut zu Frosti. Frosti schaut zu Mira. Langsam öffnet sich Frostis Tür. Darin: Eine dampfende, perfekte, goldene Currywurst. Engelschor."}, {"t": "line", "who": "FROSTI", "par": null, "text": "*bzzzt* … Ich habe sie … für einen besonderen Tag … aufbewahrt."}, {"t": "line", "who": "KALLE", "par": "Tränen in den Augen", "text": "… Frosti … du warst die ganze Zeit … ein Wurstschrank?"}, {"t": "line", "who": "FROSTI", "par": null, "text": "Ich war immer … mehr … als ein Joghurt."}, {"t": "dir", "text": "Kalle riecht die Wurst. Seine Augen glühen ROT. Bass-Drop. Seine Koteletten fangen an zu schweben. Super-Saiyajin-artige Aura … nein, eine Aura aus Ketchup und Currypulver."}, {"t": "line", "who": "KALLE", "par": "Stimme hallend, drei Oktaven tiefer", "text": "KALLE … ZEIT."}, {"t": "dir", "text": "Zeitlupe. Kalle legt den Antrag auf den Boden, direkt vor den Stempelmeister. Dann legt er die Currywurst MITTEN auf den Antrag."}, {"t": "line", "who": "KALLE", "par": null, "text": "Hey, Stempel! Lebensmittel … in den Amtsräumen!"}, {"t": "dir", "text": "Der Stempelmeister sieht die Wurst. Sein Monokel springt heraus."}, {"t": "line", "who": "STEMPELMEISTER", "par": null, "text": "LEBENSMITTEL SIND IN DEN AMTSRÄUMEN NICHT GESTATTEEEEET!"}, {"t": "dir", "text": "Er springt hoch – höher – durch die zerstörte Decke in den Weltraum – und kracht mit voller Wucht nach unten. Ultra-Zeitlupe. Die Kamera umkreist den Moment wie in einem Actionfilm."}, {"t": "dir", "text": "Uhr: **23:59:59"}, {"t": "sfx", "text": "KA-WUMMMMMMS."}, {"t": "dir", "text": "Weißblende."}, {"t": "dir", "text": "Langsam lichtet sich der Staub. Auf dem Boden liegt der Antrag. Mitten drauf, in perfektem Violett:"}, {"t": "card", "text": "GENEHMIGT."}, {"t": "dir", "text": "Und daneben: ein kleiner Abdruck einer Currywurst."}, {"t": "line", "who": "STEMPELMEISTER", "par": "schwach", "text": "… Nein … neeeiiin …"}, {"t": "dir", "text": "Er löst sich auf. Nicht in Staub – in tausende Blätter Papier, die wie Schnee in Zeitlupe herabschweben. Das gesamte Amt beginnt zu zerfallen. Aktenschränke klappen zusammen. Die archivierten Leute fallen aus ihren Ordnern und jubeln."}, {"t": "line", "who": "ARCHIVIERTER TYP", "par": null, "text": "ICH BIN FREI! ICH KANN MICH UMMELDEN!"}, {"t": "dir", "text": "Dann ist da nur noch: eine weite, leere, sonnige Wiese. Vögel zwitschern."}, {"t": "line", "who": "MIRA", "par": "schaut sich um", "text": "… Wo ist Gerd?"}, {"t": "dir", "text": "CUT: Gerd sitzt mit den Business-Tauben auf der Wiese um einen Tisch, der mitten im Nichts steht."}, {"t": "line", "who": "GERD", "par": null, "text": "Und deshalb … gründen wir: Das Amt 2.0. Bürokratie, aber als App."}, {"t": "dir", "text": "Alle Tauben applaudieren."}, {"t": "line", "who": "MIRA", "par": null, "text": "NEIN. *(zieht ihn am Flügel weg)*"}, {"t": "scene", "text": "AKT 5 – „Die Umarmung“"}, {"t": "dir", "text": "Auf der Wiese liegt, ganz klein, ein winziger Holzstempel. Ohne Anzug. Ohne Monokel. Baby-Größe. Er schaut traurig. Er stempelt leise ins Gras: „bitte hab mich lieb“."}, {"t": "dir", "text": "Alle schauen sich an. Niemand bewegt sich."}, {"t": "dir", "text": "Dann rollt Klaus vor."}, {"t": "line", "who": "KLAUS", "par": null, "text": "… Umarmung?"}, {"t": "dir", "text": "Der kleine Stempel schaut auf. Dann umarmt er Klaus. Fest."}, {"t": "dir", "text": "Stille. Alle halten den Atem an. Wir warten auf den Schrei."}, {"t": "dir", "text": "Kein Schrei. Der Stempel ist aus Holz. Die Stacheln tun ihm nicht weh."}, {"t": "dir", "text": "Klaus' Kulleraugen füllen sich mit Tränen. Sanfte Klaviermusik. Sonnenuntergang."}, {"t": "line", "who": "KLAUS", "par": "flüsternd", "text": "… Meine … erste … Umarmung."}, {"t": "dir", "text": "Frosti öffnet seine Tür, sein Licht leuchtet warm (nicht traurig!). Eiswürfel-Freudentränen."}, {"t": "line", "who": "FROSTI", "par": null, "text": "*bzzzt* … Ich fühle … WÄRME. *(Pause)* … Das ist ein technischer Defekt. Bitte rufen Sie den Kundendienst."}, {"t": "dir", "text": "Kalle wischt sich eine Träne weg und schnäuzt sich lautstark in Gerds Krawatte."}, {"t": "line", "who": "GERD", "par": null, "text": "Bro."}, {"t": "dir", "text": "Der kleine Stempel löst sich von Klaus und stempelt ihm sanft einen Abdruck auf den Topf: Ein kleines Herz."}, {"t": "line", "who": "KALLE", "par": "schluchzt", "text": "Dat is so schön … Isch brauch jetzt 'ne Currywurst."}, {"t": "scene", "text": "SCHLUSS – „Zurück am Imbiss“"}, {"t": "card", "text": "AUSSEN. KALLES WURSTPALAST – NACHT"}, {"t": "dir", "text": "Kalle hängt stolz die neue Genehmigung an die Wand. Daneben hängt jetzt ein Foto von Klaus und dem kleinen Stempel. Der kleine Stempel arbeitet jetzt am Imbiss und stempelt Pommestüten mit „LECKER“."}, {"t": "line", "who": "KALLE", "par": null, "text": "Kalles Wurstpalast … ist wieder im Geschäft!"}, {"t": "dir", "text": "Alle jubeln. Konfetti. Fröhliche Musik."}, {"t": "dir", "text": "Mira lehnt sich zurück und atmet zum ersten Mal in der Folge entspannt aus. Sie streicht auf ihrem Notizblock die Zahl durch und schreibt: „Heute war … okay.“"}, {"t": "line", "who": "MIRA", "par": "lächelt", "text": "Weißt du was? Ich hasse es hier gar nicht so sehr."}, {"t": "dir", "text": "In diesem Moment: Ein Briefträger fährt vorbei. Ein violetter Brief fliegt in Zeitlupe … und klatscht Mira ins Gesicht."}, {"t": "dir", "text": "Sie öffnet ihn langsam. Liest. Ihr Gesicht wird leer."}, {"t": "line", "who": "KALLE", "par": null, "text": "Was steht drin?"}, {"t": "line", "who": "MIRA", "par": "monoton", "text": "„Ihr Antrag auf Abschaffung des Amtes wurde nachträglich abgelehnt. Grund: Falsche Tintenfarbe. Mit freundlichen Grüßen, DAS AMT – Abteilung für Widersprüche gegen Abteilungen.“"}, {"t": "dir", "text": "Stille."}, {"t": "dir", "text": "Ganz langsam dreht sich der kleine Stempel am Imbiss zur Kamera. Sein Auge glitzert für eine halbe Sekunde violett. Orgelton."}, {"t": "line", "who": "LOCHI", "par": "taucht aus der Pommestüte auf", "text": "… *Klack.*"}, {"t": "line", "who": "MIRA", "par": "direkt in die Kamera, extrem langsam", "text": "… Ich. Hasse. Es. Hier."}, {"t": "card", "text": "SCHWARZBILD."}, {"t": "scene", "text": "POST-CREDIT-SZENE"}, {"t": "dir", "text": "Kalle steht wieder vor einem NEUEN Toaster. Er hält eine Currywurst. Epische Musik."}, {"t": "line", "who": "KALLE", "par": null, "text": "Diesmal … schaffe isch's."}, {"t": "dir", "text": "Klaus rollt neben ihn."}, {"t": "line", "who": "KLAUS", "par": null, "text": "Kalle … Umarmung?"}, {"t": "line", "who": "KALLE", "par": null, "text": "Später, Klaus. Isch muss toasten."}, {"t": "dir", "text": "Er rammt die Wurst in den Toaster. Der Toaster explodiert. Die Explosion schleudert Klaus in Kalles Arme."}, {"t": "dir", "text": "Zwei Sekunden Stille."}, {"t": "line", "who": "KALLE", "par": null, "text": "… AAAAAAAAAAAAAAAH!"}, {"t": "line", "who": "KLAUS", "par": "glücklich", "text": "Zweite Umarmung!"}, {"t": "card", "text": "ENDE."}];
+
+/* ---------- Figuren (eigene Designs, SVG, viewBox 0 0 120 170) ---------- */
+const eye=(x,y,r=6)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="#111" stroke-width="2"/><circle cx="${x+1}" cy="${y+1}" r="${r*.45}" fill="#111"/>`;
+const CH={
+ KALLE:{name:'Kalle',color:'#ff8a1f',pitch:.7,rate:1.05,info:'Will nur Currywurst',svg:`
+  <ellipse cx="60" cy="165" rx="40" ry="5" fill="rgba(0,0,0,.3)"/>
+  <rect x="38" y="140" width="14" height="24" rx="5" fill="#5a3a1c"/><rect x="68" y="140" width="14" height="24" rx="5" fill="#5a3a1c"/>
+  <ellipse cx="60" cy="118" rx="42" ry="34" fill="#ff8a1f" stroke="#111" stroke-width="3"/>
+  <rect x="44" y="96" width="32" height="26" rx="5" fill="#ff9d42" stroke="#111" stroke-width="2"/>
+  <circle cx="70" cy="114" r="6" fill="#d81b1b"/><circle cx="76" cy="120" r="3" fill="#d81b1b"/>
+  <circle cx="60" cy="66" r="30" fill="#f5c19a" stroke="#111" stroke-width="3"/>
+  <path d="M30 62 q-2 22 10 28 l4 -26z" fill="#6b3a17" stroke="#111" stroke-width="2"/><path d="M90 62 q2 22 -10 28 l-4 -26z" fill="#6b3a17" stroke="#111" stroke-width="2"/>
+  ${eye(50,64,6)}${eye(70,64,6)}
+  <ellipse cx="60" cy="76" rx="7" ry="5" fill="#e89a78" stroke="#111" stroke-width="2"/>
+  <path d="M48 86 q12 9 24 0" fill="#7a1010" stroke="#111" stroke-width="2"/>
+  <path d="M26 54 q34 -40 68 0z" fill="#ffd21f" stroke="#111" stroke-width="3"/><rect x="22" y="50" width="76" height="9" rx="4" fill="#ffd21f" stroke="#111" stroke-width="3"/>`},
+ MIRA:{name:'Mira',color:'#4fa3ff',pitch:1.25,rate:1.08,info:'Die einzige Vernünftige',svg:`
+  <ellipse cx="60" cy="165" rx="32" ry="5" fill="rgba(0,0,0,.3)"/>
+  <rect x="44" y="128" width="12" height="36" rx="5" fill="#1d4f9c" stroke="#111" stroke-width="2"/><rect x="64" y="128" width="12" height="36" rx="5" fill="#1d4f9c" stroke="#111" stroke-width="2"/>
+  <rect x="36" y="78" width="48" height="58" rx="14" fill="#2f7be0" stroke="#111" stroke-width="3"/>
+  <rect x="50" y="90" width="20" height="16" rx="3" fill="#256bc6" stroke="#111" stroke-width="2"/>
+  <rect x="80" y="96" width="6" height="34" rx="3" fill="#b8c2cc" stroke="#111" stroke-width="2" transform="rotate(-15 83 113)"/>
+  <circle cx="60" cy="52" r="26" fill="#c98b62" stroke="#111" stroke-width="3"/>
+  <path d="M34 50 q2 -30 26 -30 q24 0 26 30 q-8 -12 -26 -14 q-18 2 -26 14z" fill="#3b2216" stroke="#111" stroke-width="2"/>
+  <circle cx="60" cy="16" r="10" fill="#3b2216" stroke="#111" stroke-width="2"/>
+  <rect x="38" y="30" width="44" height="12" rx="6" fill="#444" stroke="#111" stroke-width="2"/><circle cx="50" cy="36" r="5" fill="#7fe0ff"/><circle cx="70" cy="36" r="5" fill="#7fe0ff"/>
+  ${eye(51,54,5)}${eye(69,54,5)}
+  <path d="M50 67 h20" stroke="#111" stroke-width="3" stroke-linecap="round"/>`},
+ GERD:{name:'Gerd',color:'#b9c3d6',pitch:1.5,rate:1.2,info:'Business-Taube, CEO von nichts',svg:`
+  <ellipse cx="60" cy="165" rx="30" ry="5" fill="rgba(0,0,0,.3)"/>
+  <path d="M50 150 l-6 14 M50 150 l0 14 M70 150 l6 14 M70 150 l0 14" stroke="#e0556b" stroke-width="4" stroke-linecap="round"/>
+  <ellipse cx="60" cy="122" rx="34" ry="32" fill="#8e98ab" stroke="#111" stroke-width="3"/>
+  <path d="M28 120 q-14 10 -6 28 q16 -6 18 -20z" fill="#6f7a8f" stroke="#111" stroke-width="2"/>
+  <ellipse cx="60" cy="100" rx="22" ry="14" fill="#5fae8f" opacity=".7"/>
+  <path d="M60 96 l-6 6 l6 26 l6 -26z" fill="#c62828" stroke="#111" stroke-width="2"/>
+  <circle cx="60" cy="70" r="24" fill="#9aa4b7" stroke="#111" stroke-width="3"/>
+  <path d="M78 74 l16 4 l-16 6z" fill="#f2b33d" stroke="#111" stroke-width="2"/>
+  <rect x="38" y="60" width="44" height="12" rx="5" fill="#111"/><path d="M42 63 h10" stroke="#6af" stroke-width="2"/>
+  <path d="M36 62 q-6 6 -2 16" stroke="#111" stroke-width="3" fill="none"/><circle cx="35" cy="80" r="3" fill="#111"/>`},
+ FROSTI:{name:'Frosti',color:'#a8e6ff',pitch:.5,rate:.85,info:'Kühlschrank mit vielen Gefühlen',svg:`
+  <ellipse cx="60" cy="165" rx="38" ry="5" fill="rgba(0,0,0,.3)"/>
+  <rect x="28" y="14" width="64" height="148" rx="10" fill="#eadfc4" stroke="#111" stroke-width="3"/>
+  <line x1="28" y1="72" x2="92" y2="72" stroke="#111" stroke-width="3"/>
+  <rect x="80" y="30" width="5" height="26" rx="2" fill="#9a9a9a"/><rect x="80" y="84" width="5" height="40" rx="2" fill="#9a9a9a"/>
+  <rect x="38" y="24" width="38" height="38" rx="5" fill="#122a33" stroke="#111" stroke-width="2"/>
+  <rect x="45" y="34" width="8" height="10" fill="#6ff"/><rect x="61" y="34" width="8" height="10" fill="#6ff"/>
+  <rect x="49" y="52" width="16" height="3" fill="#6ff"/>
+  <path d="M28 100 q-16 4 -18 24" stroke="#777" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M92 100 q16 4 18 24" stroke="#777" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <circle cx="44" cy="90" r="4" fill="#ff5c8a"/><rect x="52" y="104" width="14" height="10" rx="2" fill="#f7a34a"/>`},
+ KLAUS:{name:'Klaus',color:'#7ee07e',pitch:1.9,rate:.9,info:'Kaktus, will eine Umarmung',svg:`
+  <ellipse cx="60" cy="165" rx="30" ry="5" fill="rgba(0,0,0,.3)"/>
+  <path d="M34 128 h52 l-6 36 h-40z" fill="#c8643a" stroke="#111" stroke-width="3"/><rect x="30" y="122" width="60" height="12" rx="3" fill="#d9774b" stroke="#111" stroke-width="3"/>
+  <rect x="38" y="62" width="44" height="64" rx="22" fill="#3fa24a" stroke="#111" stroke-width="3"/>
+  <path d="M40 96 h-10 q-6 0 -6 -8 v-12" stroke="#111" stroke-width="3" fill="#3fa24a"/><rect x="22" y="70" width="12" height="28" rx="6" fill="#3fa24a" stroke="#111" stroke-width="3"/>
+  <g stroke="#f2f0c0" stroke-width="2" stroke-linecap="round"><path d="M42 72 l-5 -3"/><path d="M78 72 l5 -3"/><path d="M40 110 l-5 2"/><path d="M80 110 l5 2"/><path d="M60 64 l0 -5"/><path d="M24 80 l-5 -2"/></g>
+  ${eye(51,86,8)}${eye(69,86,8)}<circle cx="49" cy="83" r="2" fill="#fff"/><circle cx="67" cy="83" r="2" fill="#fff"/>
+  <path d="M54 102 q6 5 12 0" stroke="#111" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <g transform="translate(60 56)"><circle r="5" fill="#ffd34d"/><circle cx="0" cy="-8" r="6" fill="#ff5fa2"/><circle cx="8" cy="-2" r="6" fill="#ff5fa2"/><circle cx="-8" cy="-2" r="6" fill="#ff5fa2"/><circle r="4" fill="#ffd34d"/></g>`},
+ STEMPELMEISTER:{name:'Der Stempelmeister',color:'#c08bff',pitch:.1,rate:.78,boss:true,info:'Herrscher über DAS AMT',svg:`
+  <ellipse cx="60" cy="165" rx="44" ry="6" fill="rgba(0,0,0,.35)"/>
+  <rect x="16" y="146" width="88" height="18" rx="3" fill="#6a1fbf" stroke="#111" stroke-width="3"/>
+  <rect x="20" y="130" width="80" height="18" rx="3" fill="#a0703e" stroke="#111" stroke-width="3"/>
+  <path d="M30 130 l8 -62 h44 l8 62z" fill="#22202b" stroke="#111" stroke-width="3"/>
+  <g stroke="#4a4660" stroke-width="1.5"><path d="M44 72 l-4 56"/><path d="M54 70 l-2 58"/><path d="M66 70 l2 58"/><path d="M76 72 l4 56"/></g>
+  <path d="M52 68 l8 20 l8 -20" fill="#fff" stroke="#111" stroke-width="2"/><path d="M58 76 l2 20 l2 -20z" fill="#6a1fbf"/>
+  <path d="M42 68 q-2 -24 18 -30 q20 6 18 30z" fill="#b5834d" stroke="#111" stroke-width="3"/>
+  <circle cx="60" cy="22" r="18" fill="#b5834d" stroke="#111" stroke-width="3"/>
+  <circle cx="52" cy="50" r="5" fill="#d9a8ff"/><circle cx="52" cy="50" r="2.5" fill="#fff"/>
+  <circle cx="69" cy="50" r="6" fill="#d9a8ff"/><circle cx="69" cy="50" r="10" fill="none" stroke="#e5c55c" stroke-width="2.5"/><path d="M79 52 q6 10 2 24" stroke="#e5c55c" stroke-width="1.5" fill="none"/>
+  <path d="M50 62 q10 -5 20 0" stroke="#111" stroke-width="2.5" fill="none"/>`},
+ LOCHI:{name:'Lochi',color:'#c9c9c9',pitch:1,rate:1,info:'Handlanger. Sagt: Klack.',svg:`
+  <ellipse cx="60" cy="165" rx="30" ry="5" fill="rgba(0,0,0,.3)"/>
+  <rect x="26" y="140" width="68" height="22" rx="6" fill="#666" stroke="#111" stroke-width="3"/>
+  <path d="M30 140 q4 -30 30 -32 q26 2 30 32z" fill="#9a9a9a" stroke="#111" stroke-width="3"/>
+  <rect x="40" y="114" width="40" height="8" rx="4" fill="#555" stroke="#111" stroke-width="2"/>
+  ${eye(50,128,5)}${eye(70,128,5)}<circle cx="44" cy="156" r="3" fill="#222"/><circle cx="76" cy="156" r="3" fill="#222"/>`},
+ EXTRA:{name:'',color:'#b5aec4',pitch:.9,rate:1,svg:`
+  <ellipse cx="60" cy="165" rx="30" ry="5" fill="rgba(0,0,0,.3)"/>
+  <rect x="38" y="80" width="44" height="84" rx="12" fill="#5c5868" stroke="#111" stroke-width="3"/>
+  <circle cx="60" cy="56" r="22" fill="#c9bfae" stroke="#111" stroke-width="3"/>
+  ${eye(52,56,4)}${eye(68,56,4)}<path d="M52 68 h16" stroke="#111" stroke-width="2.5"/>
+  <rect x="54" y="84" width="12" height="40" fill="#8a8597"/>`}
+};
+const MAIN=['KALLE','MIRA','GERD','FROSTI','KLAUS','STEMPELMEISTER','LOCHI'];
+const NAMEMAP={KALLE:/Kalle/,MIRA:/Mira/,GERD:/Gerd/,FROSTI:/Frosti/,KLAUS:/Klaus/,STEMPELMEISTER:/Stempelmeister/i,LOCHI:/Lochi/};
+const svgOf=(k)=>`<svg viewBox="0 0 120 170" aria-hidden="true">${CH[k].svg}</svg>`;
+const keyOf=(who)=>{const w=who.replace(/\s*\(.*\)/,'');return CH[w]?w:'EXTRA'};
+
+/* ---------- Kulissen ---------- */
+const BG={
+ imbiss:(night,morning)=>`<svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice">
+  <defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${night?'#0c1440':morning?'#ffb98a':'#7cc8ff'}"/><stop offset="1" stop-color="${night?'#2b2a6b':morning?'#ffe2b8':'#d8f1ff'}"/></linearGradient></defs>
+  <rect width="160" height="90" fill="url(#sky)"/>
+  ${night?[...Array(30)].map((_,i)=>`<circle cx="${(i*37)%160}" cy="${(i*13)%40}" r=".5" fill="#fff"/>`).join('')+'<circle cx="135" cy="14" r="7" fill="#fff6c8"/>':'<circle cx="135" cy="16" r="9" fill="#fff2a0"/>'}
+  <path d="M0 50 h20 v-14 h12 v14 h16 v-22 h14 v22 h96 v40 h-158z" fill="${night?'#1b1840':'#a7b8d6'}" opacity=".8"/>
+  <rect y="62" width="160" height="28" fill="${night?'#2a2533':'#8f8a7f'}"/><rect y="62" width="160" height="2" fill="#555"/>
+  <g transform="translate(100 24)"><rect width="46" height="40" rx="3" fill="#3c8f5a" stroke="#111" stroke-width=".8"/><rect x="4" y="12" width="38" height="14" fill="${night?'#ffd76a':'#2a2a2a'}" stroke="#111" stroke-width=".6"/>
+  <rect x="-3" y="-8" width="52" height="10" rx="2" fill="#ffd21f" stroke="#111" stroke-width=".8"/><text x="23" y="-1" font-size="4.6" text-anchor="middle" font-family="Bangers,Impact,sans-serif" fill="#c62828">KALLES WURSTPALAST</text>
+  <circle cx="8" cy="42" r="4" fill="#222"/><circle cx="38" cy="42" r="4" fill="#222"/></g></svg>`,
+ amt:()=>`<svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice"><rect width="160" height="90" fill="#9ba39a"/>
+  ${[...Array(10)].map((_,i)=>`<g transform="translate(${i*17-4} 0)"><rect width="15" height="62" fill="#7e877f" stroke="#555" stroke-width=".5"/>${[0,1,2,3].map(j=>`<rect x="2" y="${4+j*14}" width="11" height="11" fill="#8b958c" stroke="#555" stroke-width=".4"/><rect x="5.5" y="${8+j*14}" width="4" height="1.5" fill="#444"/>`).join('')}</g>`).join('')}
+  <rect y="62" width="160" height="28" fill="#c9c3a8"/><path d="M0 62 L80 40 L160 62" fill="none" stroke="#b8b296" stroke-width=".4"/>
+  <rect x="20" y="2" width="30" height="2" fill="#f4fff4"/><rect x="110" y="2" width="30" height="2" fill="#f4fff4" opacity=".6"/>
+  <g transform="translate(132 40)"><rect width="16" height="22" rx="2" fill="#c62828" stroke="#111" stroke-width=".6"/><rect x="3" y="4" width="10" height="5" fill="#111"/><text x="8" y="8.2" font-size="3.5" fill="#f33" text-anchor="middle" font-family="monospace">0004</text></g></svg>`,
+ show:()=>`<svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice"><rect width="160" height="90" fill="#1a0b33"/>
+  ${[...Array(9)].map((_,i)=>`<path d="M${i*20} 0 L${i*20-14} 90 L${i*20+14} 90z" fill="${i%2?'#6a1fbf':'#3a1474'}" opacity=".55"/>`).join('')}
+  <path d="M30 0 L60 90 L90 90z" fill="#fff" opacity=".08"/><path d="M130 0 L70 90 L110 90z" fill="#fff" opacity=".08"/>
+  <rect x="38" y="6" width="84" height="16" rx="4" fill="#12071f" stroke="#ff4fd8" stroke-width="1.2"/>
+  <text x="80" y="17.5" font-size="9" text-anchor="middle" font-family="Bangers,Impact,sans-serif" fill="#ffe14d" letter-spacing=".5">WER WIRD GENEHMIGT?</text>
+  <rect y="64" width="160" height="26" fill="#2b1150"/>${[...Array(16)].map((_,i)=>`<circle cx="${i*10+5}" cy="66" r="1.2" fill="${i%2?'#ffe14d':'#ff4fd8'}"/>`).join('')}</svg>`,
+ doors:()=>`<svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice"><rect width="160" height="90" fill="#4b5246"/>
+  ${[...Array(8)].map((_,i)=>`<g transform="translate(${i*20+3} 14)"><rect width="14" height="48" fill="#7a5a3a" stroke="#222" stroke-width=".6"/><rect x="2" y="3" width="10" height="5" fill="#ece6d0"/><text x="7" y="6.8" font-size="2.6" text-anchor="middle" font-family="sans-serif" fill="#222">1A${['','(neu)','?','!','(alt)','b','(echt)','NICHT'][i]}</text><circle cx="11" cy="28" r="1" fill="#e5c55c"/></g>`).join('')}
+  <rect y="62" width="160" height="28" fill="#a39c80"/><rect width="160" height="3" fill="#ddf" opacity=".5"/></svg>`,
+ throne:()=>`<svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice"><rect width="160" height="90" fill="#24103d"/>
+  <circle cx="80" cy="34" r="40" fill="#6a1fbf" opacity=".35"/>
+  ${[...Array(12)].map((_,i)=>`<rect x="${58+(i%4)*11}" y="${50-Math.floor(i/4)*12}" width="10" height="12" fill="${['#3d3a48','#4b4757','#58536a'][i%3]}" stroke="#111" stroke-width=".4"/><rect x="${61+(i%4)*11}" y="${53-Math.floor(i/4)*12}" width="4" height="4" fill="#ccc" opacity=".6"/>`).join('')}
+  <g transform="translate(130 10)"><circle r="9" fill="#ece6d0" stroke="#111" stroke-width=".8"/><path d="M0 0 v-6 M0 0 l4 2" stroke="#111" stroke-width=".8"/><text y="14" font-size="3.5" text-anchor="middle" fill="#ddd" font-family="monospace">23:57</text></g>
+  <rect y="66" width="160" height="24" fill="#3a1e5e"/>${[...Array(12)].map((_,i)=>`<text x="${i*14+2}" y="${74+(i%3)*6}" font-size="3.4" fill="#8b4dff" opacity=".6" font-family="Bangers,Impact,sans-serif">ABGELEHNT</text>`).join('')}</svg>`,
+ wiese:()=>`<svg viewBox="0 0 160 90" preserveAspectRatio="xMidYMid slice"><defs><linearGradient id="ws" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb36b"/><stop offset="1" stop-color="#ffe8a8"/></linearGradient></defs>
+  <rect width="160" height="90" fill="url(#ws)"/><circle cx="80" cy="54" r="18" fill="#ffdf6b"/>
+  <path d="M0 58 Q40 44 80 56 T160 52 V90 H0z" fill="#6cbf4a"/><path d="M0 70 Q50 60 100 70 T160 66 V90 H0z" fill="#4fa53a"/>
+  ${[...Array(14)].map((_,i)=>`<circle cx="${(i*23)%160}" cy="${72+(i*7)%16}" r="1.2" fill="${i%2?'#fff':'#ff8fc8'}"/>`).join('')}</svg>`
+};
+function locFor(i){
+  let loc='imbiss',night=false,morning=false;
+  for(let j=0;j<=i;j++){const o=SCRIPT[j],t=o.text||'';
+    if(o.t==='scene'){
+      if(/COLD OPEN/.test(t)){loc='imbiss';morning=true;night=false}
+      else if(/AKT 1/.test(t)){loc='imbiss';morning=false}
+      else if(/AKT 2/.test(t))loc='amt';
+      else if(/PRÜFUNG 1|PRÜFUNG 2/.test(t))loc='show';
+      else if(/PRÜFUNG 3/.test(t))loc='doors';
+      else if(/AKT 4/.test(t))loc='throne';
+      else if(/AKT 5/.test(t))loc='wiese';
+      else if(/SCHLUSS/.test(t)){loc='imbiss';night=true}
+      else if(/POST-CREDIT/.test(t)){loc='imbiss';night=false;morning=true}
+    }
+    if(o.t==='dir'&&/Gameshow-Studio/.test(t))loc='show';
+    if(o.t==='dir'&&/sonnige Wiese/.test(t))loc='wiese';
+  }
+  return {loc,night,morning};
+}
+/* Wer ist in der Szene zu sehen: alle Hauptfiguren, die bis jetzt in dieser Szene genannt wurden */
+function castFor(i){
+  let s=i;while(s>0&&SCRIPT[s].t!=='scene')s--;
+  const set=new Set();
+  for(let j=s;j<=i;j++){const o=SCRIPT[j];
+    if(o.t==='line'){const k=keyOf(o.who);if(k!=='EXTRA')set.add(k);}
+    if(o.t==='dir'||o.t==='line')for(const k of MAIN)if(NAMEMAP[k].test(o.text))set.add(k);
+  }
+  // in Akt 5 / Schluss ist der Stempelmeister als kleiner Stempel dabei, aber nicht als Riese
+  return MAIN.filter(k=>set.has(k));
+}
+
+/* ---------- Player ---------- */
+const $=id=>document.getElementById(id);
+let idx=0,playing=false,timer=null,lastBg='',lastCast='';
+const speedSel=$('speed'),voiceBox=$('voice');
+const synth=window.speechSynthesis;let deVoice=null;
+function pickVoice(){try{const v=synth.getVoices();deVoice=v.find(x=>/^de/i.test(x.lang))||null}catch(e){}}
+if(synth){pickVoice();synth.onvoiceschanged=pickVoice}
+
+function render(i){
+  const o=SCRIPT[i];if(!o)return;
+  const {loc,night,morning}=locFor(i);
+  const bgKey=loc+night+morning;
+  if(bgKey!==lastBg){$('bg').innerHTML=BG[loc](night,morning);lastBg=bgKey}
+  const cast=castFor(i);const ck=cast.join();
+  const speaker=o.t==='line'?keyOf(o.who):null;
+  const showCast=[...cast];if(speaker==='EXTRA')showCast.push('EXTRA');
+  const castEl=$('cast');
+  if(showCast.join()!==lastCast){
+    const prev=new Set(lastCast.split(','));
+    castEl.innerHTML=showCast.map(k=>`<div class="ch${CH[k].boss?' boss big':''}${prev.has(k)?'':' enter'}" data-k="${k}">${svgOf(k)}</div>`).join('');
+    lastCast=showCast.join();
+  }
+  castEl.querySelectorAll('.ch').forEach(el=>el.classList.toggle('talk',el.dataset.k===speaker));
+  // Untertitel
+  const subs=$('subs'),card=$('card');
+  card.classList.remove('on','freeze');subs.classList.remove('dir');
+  if(o.t==='scene'||o.t==='card'){
+    const freeze=/SCHIEF|SCHWARZBILD|ENDE/.test(o.text)&&o.t==='card';
+    $('cardtxt').textContent=o.text;card.classList.add('on');if(freeze&&!/SCHIEF/.test(o.text)){}else if(freeze)card.classList.add('freeze');
+    if(/INNEN|AUSSEN|CUT|ZEITSPRUNG/.test(o.text)&&o.t==='card'){card.classList.remove('on');subs.classList.add('dir');$('who').textContent='Ort';$('txt').textContent=o.text;}
+    else{$('who').textContent='';$('txt').textContent='';}
+  }else if(o.t==='line'){
+    const c=CH[speaker];$('who').innerHTML=`<span style="color:${c.color}">${o.who}</span>${o.par?` <span class="par">(${o.par})</span>`:''}`;
+    $('txt').textContent=o.text;
+  }else if(o.t==='sfx'){
+    $('who').textContent='';$('txt').textContent='';
+  }else{subs.classList.add('dir');$('who').textContent='Regie';$('txt').textContent=o.text;}
+  // Effekte
+  const stage=$('stage'),t=o.text||'';
+  stage.classList.remove('shake','zoom','glitch');void stage.offsetWidth;
+  if(o.t==='sfx'){const s=$('sfx');s.textContent=t.replace(/\.$/,'');s.classList.remove('on');void s.offsetWidth;s.classList.add('on');stage.classList.add('shake')}
+  if(/explodiert|KA-WUMM|BOOOM|kracht|stampft/.test(t)){const f=$('flash');f.classList.remove('on');void f.offsetWidth;f.classList.add('on');stage.classList.add('shake')}
+  if(o.t==='line'&&(/!{1}/.test(t)&&t===t.toUpperCase()&&t.length>6))stage.classList.add('shake');
+  if(/ZOOM/.test(t))stage.classList.add('zoom');
+  if(/flackern|Glitch|GENEH-ABGE/.test(t))stage.classList.add('glitch');
+  // Fortschritt
+  $('bar').style.width=((i+1)/SCRIPT.length*100)+'%';$('count').textContent=`${i+1} / ${SCRIPT.length}`;
+  document.querySelectorAll('.chap').forEach(b=>b.classList.toggle('cur',+b.dataset.i<=i&&(+b.dataset.next>i)));
+}
+function duration(o){const sp=+speedSel.value;const w=(o.text||'').split(/\s+/).length;
+  let base=o.t==='scene'?2600:o.t==='card'?2200:o.t==='sfx'?1500:Math.max(1700,w*(o.t==='dir'?300:340)+600);
+  return base/sp}
+function speak(o,done){
+  if(!voiceBox.checked||!synth||!(o.t==='line'||o.t==='dir'||o.t==='scene')){return false}
+  try{synth.cancel();
+    let text=o.text.replace(/[*„“]/g,'').replace(/…/g,', ');
+    if(o.t==='line'&&/^[.…\s]*$/.test(text.replace(/[^\w]/g,'')))return false;
+    const u=new SpeechSynthesisUtterance(text);u.lang='de-DE';if(deVoice)u.voice=deVoice;
+    const sp=+speedSel.value;
+    if(o.t==='line'){const c=CH[keyOf(o.who)];u.pitch=c.pitch;u.rate=Math.min(2,c.rate*sp)}else{u.pitch=.9;u.rate=1.15*sp;u.volume=.75}
+    let fired=false;const fin=()=>{if(!fired){fired=true;done()}};
+    u.onend=fin;u.onerror=fin;synth.speak(u);
+    setTimeout(()=>{if(!synth.speaking&&!fired)fin()},1500); // falls die Stimme nicht startet
+    return true}catch(e){return false}
+}
+function step(){
+  if(!playing)return;
+  const o=SCRIPT[idx];render(idx);
+  const next=()=>{if(!playing)return;if(idx<SCRIPT.length-1){idx++;timer=setTimeout(step,o.t==='line'?250:350)}else{setPlaying(false)}};
+  if(!speak(o,next))timer=setTimeout(next,duration(o));
+}
+function setPlaying(p){playing=p;clearTimeout(timer);if(!p&&synth)try{synth.cancel()}catch(e){}
+  $('play').textContent=p?'⏸ Pause':'▶ Play';if(p){$('start').hidden=true;step()}}
+function go(i){idx=Math.max(0,Math.min(SCRIPT.length-1,i));$('start').hidden=true;clearTimeout(timer);if(synth)try{synth.cancel()}catch(e){}
+  if(playing)step();else render(idx)}
+$('play').onclick=()=>setPlaying(!playing);
+$('bigplay').onclick=()=>setPlaying(true);
+$('next').onclick=()=>go(idx+1);$('prev').onclick=()=>go(idx-1);
+$('prog').onclick=e=>{const r=e.currentTarget.getBoundingClientRect();go(Math.floor((e.clientX-r.left)/r.width*SCRIPT.length))};
+document.addEventListener('keydown',e=>{if(e.target.tagName==='SELECT'||e.target.tagName==='INPUT')return;
+  if(e.code==='Space'){e.preventDefault();setPlaying(!playing)}else if(e.code==='ArrowRight')go(idx+1);else if(e.code==='ArrowLeft')go(idx-1)});
+voiceBox.onchange=()=>{try{localStorage.setItem('kalle-voice',voiceBox.checked?'1':'0')}catch(e){}};
+try{voiceBox.checked=localStorage.getItem('kalle-voice')==='1'}catch(e){}
+
+/* Kapitel */
+const scenes=SCRIPT.map((o,i)=>o.t==='scene'?i:-1).filter(i=>i>=0);
+$('chaps').innerHTML=scenes.map((i,n)=>{const [a,b]=SCRIPT[i].text.split(/\s[–:]\s/);
+  return `<button class="chap" data-i="${i}" data-next="${scenes[n+1]??1e9}"><b>${a}</b><span>${(b||'').replace(/[„“]/g,'')}</span></button>`}).join('');
+document.querySelectorAll('.chap').forEach(b=>b.onclick=()=>{go(+b.dataset.i);if(!playing)setPlaying(true);$('tv').scrollIntoView({behavior:'smooth',block:'center'})});
+/* Figurenliste */
+$('castlist').innerHTML=MAIN.map(k=>`<div class="cc"><div class="pic">${svgOf(k)}</div><b style="color:${CH[k].color}">${CH[k].name}</b><span>${CH[k].info}</span></div>`).join('');
+render(0);
+</script>
