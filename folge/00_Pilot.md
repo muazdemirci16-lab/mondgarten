@@ -2,7 +2,7 @@
 
 *Ein chaotischer Animations-Sketch im Stil von Meme-Machinima-Serien – mit komplett eigenen Figuren.*
 
-**Zum Anschauen:** `pilot-player.html` im Browser öffnen.
+**Zum Anschauen:** `pilot-player.html` im Browser öffnen (3D, mit Stimmen).
 **Laufzeit:** ca. 12–14 Minuten · **Ton:** laut, absurd, schnell geschnitten, mit plötzlichen Herz-Momenten
 
 ---
