@@ -1,0 +1,635 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>:root{padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Klickrausch</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=DM+Sans:opsz,wght@9..40,400;9..40,600;9..40,700&display=swap">
+<style>
+/* Layout: one-screen arcade app. Top bar, then one of three views (start, game, ranking) filling the rest. */
+:root {
+  --bg: #f3eee6;
+  --surface: #fffaf3;
+  --sunk: #e8e0d3;
+  --fg: #1f1a17;
+  --muted: #6f655c;
+  --accent: #ff5a1f;
+  --accent-2: #ffb21f;
+  --on-accent: #ffffff;
+  --line: rgba(31, 26, 23, .12);
+  --mine: rgba(255, 90, 31, .14);
+  --danger: #d4252b;
+  --display: "Unbounded", "Arial Black", system-ui, sans-serif;
+  --text: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17130f; --surface: #221c17; --sunk: #2e2620; --fg: #f6eee5; --muted: #a99d91;
+    --accent: #ff6a2c; --accent-2: #ffbe3d; --on-accent: #ffffff; --line: rgba(246, 238, 229, .12);
+    --mine: rgba(255, 106, 44, .2); --danger: #ff5a5f; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17130f; --surface: #221c17; --sunk: #2e2620; --fg: #f6eee5; --muted: #a99d91;
+  --accent: #ff6a2c; --accent-2: #ffbe3d; --on-accent: #ffffff; --line: rgba(246, 238, 229, .12);
+  --mine: rgba(255, 106, 44, .2); --danger: #ff5a5f; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--text); font-size: 16px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  display: flex; flex-direction: column;
+}
+.app { flex: 1; display: flex; flex-direction: column; gap: 16px; width: 100%; max-width: 640px; margin: 0 auto; min-height: 0; }
+button { font: inherit; color: inherit; cursor: pointer; border: 0; background: none; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--accent-2); outline-offset: 2px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.logo { font-family: var(--display); font-weight: 800; font-size: 1.35rem; letter-spacing: -.02em; display: flex; align-items: center; gap: 8px; }
+.logo i { font-style: normal; color: var(--accent); }
+.ghost { padding: 10px 14px; border-radius: 999px; background: var(--sunk); font-weight: 600; display: inline-flex; gap: 6px; align-items: center; }
+.view { flex: 1; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 16px; }
+.player { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; }
+.flag { font-size: 2rem; line-height: 1; }
+.player b { display: block; font-size: 1.15rem; }
+.player small { color: var(--muted); }
+.player .edit { margin-left: auto; color: var(--muted); font-size: .9rem; }
+h2 { font-family: var(--display); font-weight: 600; font-size: 1rem; margin: 0 0 12px; letter-spacing: -.01em; }
+.grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.chip { padding: 12px 0; border-radius: 12px; background: var(--sunk); font-weight: 700; font-variant-numeric: tabular-nums; }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--on-accent); }
+.best { margin: 12px 0 0; color: var(--muted); font-size: .95rem; }
+.go { width: 100%; padding: 18px; border-radius: 18px; background: var(--accent); color: var(--on-accent); font-family: var(--display); font-weight: 800; font-size: 1.2rem; box-shadow: 0 6px 0 color-mix(in srgb, var(--accent) 60%, #000); transition: transform .06s, box-shadow .06s; }
+.go:active { transform: translateY(4px); box-shadow: 0 2px 0 color-mix(in srgb, var(--accent) 60%, #000); }
+
+/* Game */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 10px 6px; text-align: center; }
+.stat span { display: block; font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 700; }
+.stat b { font-family: var(--display); font-size: clamp(1.4rem, 6vw, 2.2rem); font-variant-numeric: tabular-nums; }
+.stat b.warn { color: var(--danger); }
+.stat b.hot { color: var(--accent); }
+.bar { height: 8px; border-radius: 99px; background: var(--sunk); overflow: hidden; }
+.bar div { height: 100%; width: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transform-origin: left; }
+.arena { flex: 1; display: grid; place-items: center; min-height: 240px; }
+.tapper {
+  width: min(78vw, 52vh, 420px); aspect-ratio: 1; max-width: 100%; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--accent-2), var(--accent) 55%, color-mix(in srgb, var(--accent) 70%, #000) 100%);
+  color: var(--on-accent); font-family: var(--display); font-weight: 800; font-size: clamp(2.6rem, 14vw, 6rem);
+  font-variant-numeric: tabular-nums; box-shadow: 0 14px 40px color-mix(in srgb, var(--accent) 45%, transparent), inset 0 -10px 0 rgba(0,0,0,.15);
+  touch-action: none; user-select: none; -webkit-user-select: none; transition: transform .05s;
+}
+.tapper.down { transform: scale(.94); }
+.tapper:disabled { filter: saturate(.5); cursor: default; }
+.hint { text-align: center; color: var(--muted); font-weight: 600; margin: 0; min-height: 1.4em; }
+
+/* Result */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); display: grid; place-items: center; padding: 16px; z-index: 20; }
+.result { width: min(100%, 380px); background: var(--surface); border-radius: 24px; padding: 24px; text-align: center; display: flex; flex-direction: column; gap: 8px; animation: pop .35s cubic-bezier(.2,1.4,.4,1); }
+@keyframes pop { from { transform: scale(.8); opacity: 0; } }
+.result h3 { font-family: var(--display); margin: 0; font-size: 1.3rem; }
+.big { font-family: var(--display); font-weight: 800; font-size: 4.5rem; color: var(--accent); line-height: 1.05; font-variant-numeric: tabular-nums; }
+.result p { margin: 0; color: var(--muted); }
+.result .rank { color: var(--fg); font-weight: 700; }
+.result .go { margin-top: 12px; font-size: 1rem; }
+.result .ghost { justify-content: center; padding: 14px; }
+.animal { display: flex; flex-direction: column; align-items: center; gap: 2px; background: var(--sunk); border-radius: 16px; padding: 12px; margin-top: 4px; }
+.animal .emo { font-size: 3.4rem; line-height: 1.1; animation: run .6s ease-out; }
+@keyframes run { from { transform: translateX(-40px) scale(.6); opacity: 0; } }
+.animal b { font-family: var(--display); font-size: 1.15rem; }
+.animal small { color: var(--muted); }
+.ladder { display: flex; justify-content: center; gap: 2px; font-size: 1.1rem; margin-top: 6px; flex-wrap: wrap; }
+.ladder span { opacity: .3; }
+.ladder span.got { opacity: 1; }
+.account { margin: 12px 0 0; padding-top: 12px; border-top: 1px solid var(--line); font-size: .9rem; color: var(--muted); }
+.account b { color: var(--fg); }
+.link { color: var(--muted); text-decoration: underline; padding: 8px; }
+
+/* Ranking */
+.seg { display: grid; grid-template-columns: 1fr 1fr; background: var(--sunk); border-radius: 14px; padding: 4px; gap: 4px; }
+.seg button { padding: 10px; border-radius: 10px; font-weight: 700; }
+.seg button[aria-pressed="true"] { background: var(--surface); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+.row-scroll { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 6px; scrollbar-width: none; scroll-snap-type: x proximity; }
+.row-scroll::-webkit-scrollbar { display: none; }
+.row-scroll .chip { flex: 0 0 auto; padding: 9px 14px; border-radius: 999px; scroll-snap-align: center; }
+.list { flex: 1; overflow-y: auto; min-height: 0; display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: 20px; }
+.entry { display: grid; grid-template-columns: 44px 30px minmax(0,1fr) auto; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.entry:last-child { border-bottom: 0; }
+.entry.mine { background: var(--mine); }
+.pos { font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; text-align: center; font-size: 1.05rem; }
+.pos.medal { font-size: 1.6rem; }
+.who { min-width: 0; }
+.who b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.who small { color: var(--muted); font-variant-numeric: tabular-nums; }
+.score { font-family: var(--display); font-weight: 800; font-size: 1.3rem; color: var(--accent); font-variant-numeric: tabular-nums; }
+.empty { padding: 40px 20px; text-align: center; color: var(--muted); }
+.empty b { display: block; color: var(--fg); font-size: 1.1rem; margin-bottom: 4px; }
+.note { font-size: .85rem; color: var(--muted); margin: 0; text-align: center; }
+
+/* Profile dialog */
+.form { width: min(100%, 400px); background: var(--surface); border-radius: 24px; padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+.form h3 { font-family: var(--display); margin: 0; }
+.form label { font-weight: 700; font-size: .9rem; display: flex; flex-direction: column; gap: 6px; }
+.form input, .form select { font: inherit; font-size: 17px; padding: 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); width: 100%; }
+.form small { color: var(--muted); font-weight: 400; }
+.form .actions { display: flex; gap: 10px; }
+.form .actions .go { font-size: 1rem; padding: 14px; }
+.form .go:disabled { opacity: .45; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+@media (max-width: 380px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="logo"><i>⚡</i>Klickrausch</div>
+    <button class="ghost" id="topBtn" type="button">🏆 Rangliste</button>
+  </header>
+
+  <!-- Start -->
+  <main class="view" id="vStart">
+    <div class="panel">
+      <button class="player" id="playerBtn" type="button">
+        <span class="flag" id="pFlag">🇩🇪</span>
+        <span><b id="pName">Name eingeben</b><small id="pCountry">Deutschland</small></span>
+        <span class="edit">ändern ✎</span>
+      </button>
+      <p class="account" id="accountLine">Konto wird geprüft …</p>
+    </div>
+    <div class="panel">
+      <h2>Wie viele Sekunden?</h2>
+      <div class="grid" id="durGrid"></div>
+      <p class="best" id="bestLine"></p>
+    </div>
+    <button class="go" id="goBtn" type="button">Los – 10 Sekunden</button>
+    <p class="note">Der erste Tipp zählt als 1 und startet die Zeit.</p>
+  </main>
+
+  <!-- Game -->
+  <main class="view" id="vGame" hidden>
+    <div class="stats">
+      <div class="stat"><span>Zeit</span><b id="sTime">10.0</b></div>
+      <div class="stat"><span>Klicks</span><b class="hot" id="sClicks">0</b></div>
+      <div class="stat"><span>Tempo /s</span><b id="sCps">0.0</b></div>
+    </div>
+    <div class="bar"><div id="timeBar"></div></div>
+    <div class="arena"><button class="tapper" id="tapper" type="button">TIPP!</button></div>
+    <p class="hint" id="hint">Erster Tipp startet die Zeit</p>
+  </main>
+
+  <!-- Ranking -->
+  <main class="view" id="vRank" hidden>
+    <div class="seg" role="group" aria-label="Liste">
+      <button type="button" data-scope="de" aria-pressed="true">🇩🇪 Deutschland</button>
+      <button type="button" data-scope="world" aria-pressed="false">🌍 Weltweit</button>
+    </div>
+    <div class="row-scroll" id="rankRow" aria-label="Zeit-Listen"></div>
+    <div class="list" id="rankList"></div>
+    <p class="note" id="rankNote"></p>
+  </main>
+</div>
+
+<div class="overlay" id="resultOv" hidden>
+  <div class="result" role="dialog" aria-modal="true" aria-labelledby="rTitle">
+    <h3 id="rTitle">Zeit vorbei!</h3>
+    <div class="big" id="rClicks">0</div>
+    <p id="rSub">Klicks in 10 Sekunden</p>
+    <p id="rCps"></p>
+    <div class="animal" id="rAnimal">
+      <span class="emo" id="aEmo">🐌</span>
+      <b id="aName">Schnecke</b>
+      <small id="aNext"></small>
+      <div class="ladder" id="aLadder"></div>
+    </div>
+    <p class="rank" id="rRank"></p>
+    <button class="go" id="againBtn" type="button">↻ Nochmal</button>
+    <button class="ghost" id="toRankBtn" type="button">🏆 Rangliste ansehen</button>
+    <button class="link" id="homeBtn" type="button">Andere Zeit wählen</button>
+  </div>
+</div>
+
+<div class="overlay" id="profileOv" hidden>
+  <form class="form" id="profileForm" role="dialog" aria-modal="true" aria-labelledby="fTitle">
+    <h3 id="fTitle">Wer spielt?</h3>
+    <label for="fName">Dein Name <small>So stehst du auf der Rangliste.</small>
+      <input id="fName" maxlength="16" autocomplete="nickname" placeholder="z. B. Muaz">
+    </label>
+    <label for="fCountry">Land
+      <select id="fCountry"></select>
+    </label>
+    <div class="actions">
+      <button class="ghost" id="fCancel" type="button">Abbrechen</button>
+      <button class="go" id="fSave" type="submit">Fertig</button>
+    </div>
+  </form>
+</div>
+
+<script>
+(() => {
+  const DURATIONS = Array.from({ length: 20 }, (_, i) => (i + 1) * 5);
+  const MAX_CPS = 25;
+  const $ = id => document.getElementById(id);
+
+  // Tier-Stufen nach Klicks pro Sekunde (ab "min").
+  const ANIMALS = [
+    { min: 0,  emo: "🐌", name: "Schnecke" },
+    { min: 2,  emo: "🐢", name: "Schildkröte" },
+    { min: 3,  emo: "🦔", name: "Igel" },
+    { min: 4,  emo: "🐈", name: "Katze" },
+    { min: 5,  emo: "🐕", name: "Hund" },
+    { min: 6,  emo: "🐇", name: "Hase" },
+    { min: 7,  emo: "🐎", name: "Pferd" },
+    { min: 8,  emo: "🐺", name: "Wolf" },
+    { min: 9,  emo: "🦁", name: "Löwe" },
+    { min: 10, emo: "🐆", name: "Leopard" }
+  ];
+  const animalIndex = cps => { let i = 0; ANIMALS.forEach((a, k) => { if (cps >= a.min) i = k; }); return i; };
+  const fmt = (n, d = 2) => n.toFixed(d).replace(".", ",");
+
+  // ---------- local storage (per viewer conveniences + offline fallback) ----------
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem("kr." + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem("kr." + k, JSON.stringify(v)); } catch {} }
+  };
+
+  const flag = code => code && code.length === 2
+    ? String.fromCodePoint(...[...code.toUpperCase()].map(c => 127397 + c.charCodeAt(0))) : "🏳️";
+  let regionNames = null;
+  try { regionNames = new Intl.DisplayNames(["de"], { type: "region" }); } catch {}
+  const countryName = c => { try { return regionNames?.of(c) || c; } catch { return c; } };
+  const COUNTRIES = (() => {
+    const pinned = ["DE", "AT", "CH", "TR"];
+    const codes = [];
+    for (let a = 65; a <= 90; a++) for (let b = 65; b <= 90; b++) {
+      const c = String.fromCharCode(a, b);
+      const n = countryName(c);
+      if (n && n !== c && !pinned.includes(c)) codes.push(c);
+    }
+    codes.sort((x, y) => countryName(x).localeCompare(countryName(y), "de"));
+    return pinned.concat(codes);
+  })();
+
+  // ---------- state ----------
+  const state = {
+    name: store.get("name", ""),
+    country: store.get("country", "DE"),
+    duration: store.get("duration", 10),
+    best: store.get("best", {}),
+    scope: store.get("scope", "de"),
+    rankDuration: 10,
+    players: [],          // [{id, name, country, best:{"5":n}}]
+    online: false,
+    myId: null,
+    canWrite: true,
+    loadNote: ""
+  };
+  let localBoard = store.get("localBoard", {}); // offline fallback: {localId: {...}}
+  let localId = store.get("localId", null);
+  if (!localId) { localId = "local-" + Math.random().toString(36).slice(2, 10); store.set("localId", localId); }
+
+  // ---------- views ----------
+  let view = "start";
+  function show(v) {
+    view = v;
+    $("vStart").hidden = v !== "start";
+    $("vGame").hidden = v !== "game";
+    $("vRank").hidden = v !== "rank";
+    $("topBtn").textContent = v === "start" ? "🏆 Rangliste" : "← Zurück";
+    $("topBtn").disabled = v === "game" && game.phase === "running";
+    if (v === "rank") renderRank(true);
+    if (v === "start") renderStart();
+  }
+  $("topBtn").onclick = () => {
+    if (view === "start") { state.rankDuration = state.duration; show("rank"); }
+    else if (view === "game" && game.phase === "running") return;
+    else { resetGame(); show("start"); }
+  };
+
+  // ---------- start screen ----------
+  function renderAccount() {
+    const el = $("accountLine");
+    el.replaceChildren();
+    const b = document.createElement("b");
+    if (state.online && state.canWrite) {
+      b.textContent = "☁️ Mit deinem Claude-Konto angemeldet.";
+      el.append(b, document.createTextNode(" Melde dich auf jedem Gerät mit demselben Konto an – deine Rekorde sind überall da."));
+    } else if (state.online) {
+      b.textContent = "👀 Nur ansehen.";
+      el.append(b, document.createTextNode(" Du kannst die Liste sehen, deine Rekorde bleiben auf diesem Gerät."));
+    } else {
+      b.textContent = "📱 Nur auf diesem Gerät.";
+      el.append(b, document.createTextNode(" Melde dich bei Claude an, damit deine Rekorde überall gelten."));
+    }
+  }
+  function renderStart() {
+    renderAccount();
+    $("pFlag").textContent = flag(state.country);
+    $("pName").textContent = state.name || "Name eingeben";
+    $("pCountry").textContent = countryName(state.country);
+    const g = $("durGrid");
+    g.replaceChildren(...DURATIONS.map(d => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "chip"; b.textContent = d + " s";
+      b.setAttribute("aria-pressed", String(d === state.duration));
+      b.onclick = () => { state.duration = d; store.set("duration", d); renderStart(); };
+      return b;
+    }));
+    const best = state.best[state.duration] || 0;
+    $("bestLine").textContent = best ? `Dein Rekord bei ${state.duration} s: ${best} Klicks` : `Noch kein Rekord bei ${state.duration} s`;
+    $("goBtn").textContent = `Los – ${state.duration} Sekunden`;
+  }
+  $("goBtn").onclick = () => {
+    if (!state.name) { openProfile(() => startGameView()); return; }
+    startGameView();
+  };
+  $("playerBtn").onclick = () => openProfile();
+
+  // ---------- profile ----------
+  let afterProfile = null;
+  $("fCountry").replaceChildren(...COUNTRIES.map(c => {
+    const o = document.createElement("option"); o.value = c; o.textContent = `${flag(c)}  ${countryName(c)}`; return o;
+  }));
+  function openProfile(then) {
+    afterProfile = then || null;
+    $("fName").value = state.name;
+    $("fCountry").value = COUNTRIES.includes(state.country) ? state.country : "DE";
+    $("fCancel").hidden = !state.name;
+    $("fSave").disabled = !state.name.trim();
+    $("profileOv").hidden = false;
+    setTimeout(() => $("fName").focus(), 50);
+  }
+  $("fName").oninput = () => { $("fSave").disabled = !$("fName").value.trim(); };
+  $("fCancel").onclick = () => { $("profileOv").hidden = true; };
+  $("profileForm").onsubmit = e => {
+    e.preventDefault();
+    const n = $("fName").value.trim().slice(0, 16);
+    if (!n) return;
+    state.name = n; state.country = $("fCountry").value;
+    store.set("name", n); store.set("country", state.country);
+    $("profileOv").hidden = true;
+    syncProfileOnline();
+    renderStart();
+    const t = afterProfile; afterProfile = null; if (t) t();
+  };
+
+  // ---------- game ----------
+  const game = { phase: "ready", clicks: 0, end: 0, start: 0, raf: 0 };
+  function startGameView() { resetGame(); show("game"); }
+  function resetGame() {
+    cancelAnimationFrame(game.raf);
+    game.phase = "ready"; game.clicks = 0;
+    $("tapper").disabled = false;
+    $("tapper").textContent = "TIPP!";
+    $("sTime").textContent = state.duration.toFixed(1);
+    $("sTime").classList.remove("warn");
+    $("sClicks").textContent = "0";
+    $("sCps").textContent = "0.0";
+    $("timeBar").style.transform = "scaleX(1)";
+    $("hint").textContent = "Erster Tipp startet die Zeit";
+    $("resultOv").hidden = true;
+  }
+  function tick() {
+    const now = performance.now();
+    const left = Math.max(0, game.end - now);
+    const elapsed = (now - game.start) / 1000;
+    $("sTime").textContent = (left / 1000).toFixed(1);
+    $("sTime").classList.toggle("warn", left < 3000);
+    $("sCps").textContent = elapsed > .2 ? (game.clicks / elapsed).toFixed(1) : "0.0";
+    if (elapsed > 1) { const a = ANIMALS[animalIndex(game.clicks / elapsed)]; $("hint").textContent = `Gerade: ${a.emo} ${a.name}`; }
+    $("timeBar").style.transform = `scaleX(${left / (state.duration * 1000)})`;
+    if (left <= 0) return finish();
+    game.raf = requestAnimationFrame(tick);
+  }
+  const tapper = $("tapper");
+  tapper.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    const now = performance.now();
+    if (game.phase === "ready") {
+      game.phase = "running"; game.clicks = 1; game.start = now; game.end = now + state.duration * 1000;
+      $("hint").textContent = "Schneller! Schneller!";
+      $("topBtn").disabled = true;
+      game.raf = requestAnimationFrame(tick);
+    } else if (game.phase === "running") {
+      if (now >= game.end) return finish();
+      game.clicks++;
+    } else return;
+    tapper.textContent = game.clicks;
+    $("sClicks").textContent = game.clicks;
+    tapper.classList.add("down");
+  });
+  const up = () => tapper.classList.remove("down");
+  tapper.addEventListener("pointerup", up);
+  tapper.addEventListener("pointercancel", up);
+  tapper.addEventListener("pointerleave", up);
+  tapper.addEventListener("contextmenu", e => e.preventDefault());
+  tapper.addEventListener("keydown", e => {
+    if ((e.key === " " || e.key === "Enter") && !e.repeat) { e.preventDefault(); tapper.dispatchEvent(new PointerEvent("pointerdown")); setTimeout(up, 60); }
+  });
+
+  function finish() {
+    if (game.phase !== "running") return;
+    game.phase = "finished";
+    cancelAnimationFrame(game.raf);
+    tapper.disabled = true; up();
+    $("sTime").textContent = "0.0";
+    $("timeBar").style.transform = "scaleX(0)";
+    $("hint").textContent = "Zeit vorbei!";
+    $("topBtn").disabled = false;
+    const d = state.duration, c = game.clicks;
+    const valid = c <= d * MAX_CPS;
+    const prev = state.best[d] || 0;
+    const record = valid && c > prev;
+    if (record) { state.best[d] = c; store.set("best", state.best); }
+    $("rTitle").textContent = record ? "🏆 Neuer Rekord!" : "Zeit vorbei!";
+    $("rClicks").textContent = c;
+    $("rSub").textContent = `Klicks in ${d} Sekunden`;
+    $("rCps").textContent = `${fmt(c / d)} Klicks pro Sekunde`;
+    $("rRank").textContent = valid ? "" : "Mehr als 25 Klicks pro Sekunde – nicht gewertet.";
+    const ai = animalIndex(c / d), an = ANIMALS[ai];
+    $("aEmo").textContent = an.emo;
+    $("aName").textContent = `Du bist ${ai === ANIMALS.length - 1 ? "ultra schnell wie ein" : "so schnell wie ein"}${["Schnecke","Schildkröte","Katze"].includes(an.name) ? "e" : ""} ${an.name}!`;
+    const nx = ANIMALS[ai + 1];
+    $("aNext").textContent = nx ? `Nächstes Tier: ${nx.emo} ${nx.name} ab ${nx.min} Klicks/s (${nx.min * d} Klicks in ${d} s)` : "Das schnellste Tier – besser geht's nicht!";
+    $("aLadder").replaceChildren(...ANIMALS.map((a, k) => { const sp = document.createElement("span"); sp.textContent = a.emo; sp.title = a.name; if (k <= ai) sp.className = "got"; return sp; }));
+    $("rAnimal").hidden = !valid;
+    if (valid) submitScore(d, c).then(() => {
+      const list = rankedFor(d, "world");
+      const pos = list.findIndex(p => p.id === myKey()) + 1;
+      const deList = rankedFor(d, "de");
+      const dePos = deList.findIndex(p => p.id === myKey()) + 1;
+      const parts = [];
+      if (dePos) parts.push(`Platz ${dePos} in Deutschland`);
+      if (pos) parts.push(`Platz ${pos} weltweit`);
+      $("rRank").textContent = parts.join(" · ");
+    });
+    setTimeout(() => { if (game.phase === "finished" && view === "game") $("resultOv").hidden = false; }, 600);
+  }
+  $("againBtn").onclick = () => resetGame();
+  $("toRankBtn").onclick = () => { $("resultOv").hidden = true; state.rankDuration = state.duration; resetGame(); show("rank"); };
+  $("homeBtn").onclick = () => { resetGame(); show("start"); };
+
+  // ---------- leaderboard data ----------
+  const myKey = () => state.online ? state.myId : localId;
+  function allPlayers() {
+    return state.online ? state.players : Object.entries(localBoard).map(([id, p]) => ({ id, ...p }));
+  }
+  function rankedFor(d, scope) {
+    return allPlayers()
+      .filter(p => p.best && p.best[d] > 0 && (scope === "world" || p.country === "DE"))
+      .sort((a, b) => b.best[d] - a.best[d] || (a.at?.[d] || 0) - (b.at?.[d] || 0));
+  }
+
+  let db = null, playersRef = null;
+  async function submitScore(d, c) {
+    // always keep a local copy
+    const me = localBoard[localId] || { best: {}, at: {} };
+    me.name = state.name; me.country = state.country;
+    if (c > (me.best[d] || 0)) { me.best[d] = c; me.at = me.at || {}; me.at[d] = Date.now(); }
+    localBoard[localId] = me; store.set("localBoard", localBoard);
+
+    if (!state.online || !state.canWrite) { renderRank(); return; }
+    const cur = state.players.find(p => p.id === state.myId);
+    const best = { ...(cur?.best || {}) };
+    const at = { ...(cur?.at || {}) };
+    if (c > (best[d] || 0)) { best[d] = c; at[d] = Date.now(); }
+    else if (cur && cur.name === state.name && cur.country === state.country) return;
+    try {
+      await playersRef.doc(state.myId).set({ name: state.name, country: state.country, best, at });
+      // reflect immediately even before the snapshot arrives
+      const i = state.players.findIndex(p => p.id === state.myId);
+      const row = { id: state.myId, name: state.name, country: state.country, best, at };
+      if (i >= 0) state.players[i] = row; else state.players.push(row);
+    } catch (e) {
+      state.canWrite = false;
+      state.loadNote = "Du kannst die gemeinsame Liste nur ansehen. Deine Ergebnisse bleiben auf diesem Gerät.";
+    }
+    renderRank();
+  }
+  function syncProfileOnline() {
+    if (!state.online || !state.canWrite) return;
+    const cur = state.players.find(p => p.id === state.myId);
+    if (!cur || (cur.name === state.name && cur.country === state.country)) return;
+    playersRef.doc(state.myId).update({ name: state.name, country: state.country }).catch(() => {});
+  }
+
+  async function connect() {
+    if (!window.claude?.use) { state.loadNote = "Rangliste von diesem Gerät."; renderRank(); return; }
+    try {
+      const [dbNs, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+      const id = user ? await user.id() : null;
+      if (!dbNs || !id) { state.loadNote = "Melde dich an, um auf der gemeinsamen Rangliste zu stehen. Jetzt: Rangliste von diesem Gerät."; renderRank(); return; }
+      db = dbNs; state.myId = id;
+      if (user.can) { const w = await user.can("data.write"); if (w === false) state.canWrite = false; }
+      playersRef = db.collection("players");
+      state.loadNote = "Rangliste wird geladen …";
+      renderRank();
+      const timer = setTimeout(() => { state.loadNote = "Die Rangliste ist gerade nicht erreichbar. Sie lädt weiter im Hintergrund."; renderRank(); }, 10000);
+      playersRef.limit(1000).onSnapshot(snap => {
+        state.online = true;
+        state.players = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        if (!snap.metadata.fromCache) {
+          clearTimeout(timer);
+          state.loadNote = state.canWrite ? "" : "Du kannst die gemeinsame Liste nur ansehen. Deine Ergebnisse bleiben auf diesem Gerät.";
+          maybeUploadLocalBests();
+          // Rekorde vom Konto auf dieses Gerät holen (z. B. neues iPad).
+          const mine = state.players.find(p => p.id === state.myId);
+          if (mine) {
+            let ch = false;
+            if (mine.name && !state.name) { state.name = mine.name; state.country = mine.country || state.country; store.set("name", state.name); store.set("country", state.country); $("profileOv").hidden = true; ch = true; }
+            for (const [k, v] of Object.entries(mine.best || {})) if (v > (state.best[k] || 0)) { state.best[k] = v; ch = true; }
+            if (ch) store.set("best", state.best);
+          }
+        }
+        renderRank();
+        if (view === "start") renderStart();
+      }, () => { clearTimeout(timer); state.loadNote = "Gemeinsame Rangliste nicht erreichbar – zeige Ergebnisse dieses Geräts."; state.online = false; renderRank(); });
+    } catch {
+      state.loadNote = "Rangliste von diesem Gerät."; renderRank();
+    }
+  }
+  // Bests played before the online list was ready get uploaded once.
+  let uploaded = false;
+  function maybeUploadLocalBests() {
+    if (uploaded || !state.canWrite || !state.name) return;
+    uploaded = true;
+    const cur = state.players.find(p => p.id === state.myId);
+    const best = { ...(cur?.best || {}) }, at = { ...(cur?.at || {}) };
+    let changed = false;
+    for (const [d, c] of Object.entries(state.best)) {
+      if (c > (best[d] || 0) && c <= Number(d) * MAX_CPS) { best[d] = c; at[d] = Date.now(); changed = true; }
+    }
+    if (changed) playersRef.doc(state.myId).set({ name: state.name, country: state.country, best, at }).catch(() => { state.canWrite = false; });
+  }
+
+  // ---------- leaderboard view ----------
+  document.querySelectorAll(".seg button").forEach(b => {
+    b.onclick = () => { state.scope = b.dataset.scope; store.set("scope", state.scope); renderRank(); };
+  });
+  function renderRank(scrollChip) {
+    if (view !== "rank") return;
+    document.querySelectorAll(".seg button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.scope === state.scope)));
+    const row = $("rankRow");
+    if (!row.childElementCount) {
+      row.replaceChildren(...DURATIONS.map(d => {
+        const b = document.createElement("button");
+        b.type = "button"; b.className = "chip"; b.textContent = d + " s"; b.dataset.d = d;
+        b.onclick = () => { state.rankDuration = d; renderRank(true); };
+        return b;
+      }));
+    }
+    let active = null;
+    row.querySelectorAll(".chip").forEach(b => {
+      const on = Number(b.dataset.d) === state.rankDuration;
+      b.setAttribute("aria-pressed", String(on)); if (on) active = b;
+    });
+    if (scrollChip && active) active.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+
+    const d = state.rankDuration;
+    const list = rankedFor(d, state.scope).slice(0, 100);
+    const box = $("rankList");
+    if (!list.length) {
+      box.innerHTML = "";
+      const e = document.createElement("div"); e.className = "empty";
+      const b = document.createElement("b"); b.textContent = `Noch niemand auf der ${d}-Sekunden-Liste.`;
+      e.append(b, document.createTextNode("Sei der Erste!"));
+      box.append(e);
+    } else {
+      const medals = ["🥇", "🥈", "🥉"];
+      box.replaceChildren(...list.map((p, i) => {
+        const r = document.createElement("div");
+        r.className = "entry" + (p.id === myKey() ? " mine" : "");
+        const pos = document.createElement("span"); pos.className = "pos" + (i < 3 ? " medal" : "");
+        pos.textContent = i < 3 ? medals[i] : (i + 1) + ".";
+        const f = document.createElement("span"); f.className = "flag"; f.style.fontSize = "1.5rem"; f.textContent = flag(p.country);
+        const who = document.createElement("div"); who.className = "who";
+        const nb = document.createElement("b"); nb.textContent = String(p.name || "?").slice(0, 16);
+        const sm = document.createElement("small"); const pa = ANIMALS[animalIndex(p.best[d] / d)]; sm.textContent = `${pa.emo} ${pa.name} · ${fmt(p.best[d] / d)} Klicks/s`;
+        who.append(nb, sm);
+        const sc = document.createElement("span"); sc.className = "score"; sc.textContent = p.best[d];
+        r.append(pos, f, who, sc);
+        return r;
+      }));
+    }
+    $("rankNote").textContent = state.loadNote || (state.online ? "Live – alle Spieler" : "");
+  }
+
+  // ---------- boot ----------
+  if (!DURATIONS.includes(state.duration)) state.duration = 10;
+  renderStart();
+  show("start");
+  if (!state.name) openProfile();
+  connect();
+})();
+</script>
+
+</body>
+</html>
